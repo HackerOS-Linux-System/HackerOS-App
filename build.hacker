@@ -1,5 +1,6 @@
 // sdk
-// kotlin
+// openjdk-21-jdk
+// gradle
 
 > cd source-code
-> 
+> gradlew assembleRelease
