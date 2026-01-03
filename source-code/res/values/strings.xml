@@ -1,0 +1,10 @@
+<resources>
+    <string name="app_name">HackerOS App</string>
+    <string name="wallpapers">Tapety</string>
+    <string name="releases">Wydania</string>
+    <string name="latest_release">Najnowsze wydanie</string>
+    <string name="all_releases">Wszystkie wydania</string>
+    <string name="download">Pobierz</string>
+    <string name="loading">Ładowanie...</string>
+    <string name="error_occurred">Błąd: %s</string>
+</resources>
