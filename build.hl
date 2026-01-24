@@ -1,6 +1,4 @@
-// sdk
-// openjdk-21-jdk
-// gradle
+// npm
 
 > cd source-code
-> gradlew assembleRelease
+> npm run dist
