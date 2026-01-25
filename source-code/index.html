@@ -1,46 +1,75 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="dark">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
     <title>HackerOS App</title>
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
       tailwind.config = {
         darkMode: 'class',
         theme: {
           extend: {
+            fontFamily: {
+              sans: ['Inter', 'sans-serif'],
+              mono: ['JetBrains Mono', 'monospace'],
+            },
             colors: {
-              primary: {
-                DEFAULT: '#10b981', // Emerald 500
-                dark: '#059669',    // Emerald 600
-                light: '#34d399'    // Emerald 400
-              },
-              darkbg: '#0f172a',    // Slate 900
-              cardbg: '#1e293b'     // Slate 800
+              primary: 'rgb(var(--color-primary) / <alpha-value>)',
+              background: 'rgb(var(--color-background) / <alpha-value>)',
+              card: 'rgb(var(--color-card) / <alpha-value>)',
+              text: 'rgb(var(--color-text) / <alpha-value>)',
+              muted: 'rgb(var(--color-muted) / <alpha-value>)',
+            },
+            animation: {
+              'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
             }
           }
         }
       }
     </script>
     <style>
+      :root {
+        --color-primary: 16 185 129; /* Emerald 500 default */
+        --color-background: 15 23 42; /* Slate 900 */
+        --color-card: 30 41 59; /* Slate 800 */
+        --color-text: 241 245 249; /* Slate 100 */
+        --color-muted: 148 163 184; /* Slate 400 */
+      }
+
       body {
         font-family: 'Inter', system-ui, -apple-system, sans-serif;
         -webkit-font-smoothing: antialiased;
+        background-color: rgb(var(--color-background));
+        color: rgb(var(--color-text));
+        /* Disable pull-to-refresh on mobile */
+        overscroll-behavior-y: none;
+        /* Handle Safe Area for notches */
+        padding-top: env(safe-area-inset-top);
+        padding-bottom: env(safe-area-inset-bottom);
+        padding-left: env(safe-area-inset-left);
+        padding-right: env(safe-area-inset-right);
       }
-      /* Custom Scrollbar for Hacker Aesthetic */
+
+      /* Custom Scrollbar */
       ::-webkit-scrollbar {
-        width: 8px;
+        width: 4px;
       }
       ::-webkit-scrollbar-track {
         background: transparent;
       }
       ::-webkit-scrollbar-thumb {
-        background: #334155;
+        background: rgb(var(--color-card));
         border-radius: 4px;
       }
       ::-webkit-scrollbar-thumb:hover {
-        background: #475569;
+        background: rgb(var(--color-primary));
       }
     </style>
   <script type="importmap">
@@ -49,12 +78,16 @@
     "react": "https://esm.sh/react@^19.2.3",
     "react-dom/": "https://esm.sh/react-dom@^19.2.3/",
     "react/": "https://esm.sh/react@^19.2.3/",
-    "lucide-react": "https://esm.sh/lucide-react@^0.563.0"
+    "lucide-react": "https://esm.sh/lucide-react@^0.563.0",
+    "framer-motion": "https://esm.sh/framer-motion@^12.29.0",
+    "vite": "https://esm.sh/vite@^7.3.1",
+    "@vitejs/plugin-react": "https://esm.sh/@vitejs/plugin-react@^5.1.2",
+    "@capacitor/cli": "https://esm.sh/@capacitor/cli@^8.0.1"
   }
 }
 </script>
 </head>
-  <body class="bg-gray-50 text-slate-900 dark:bg-darkbg dark:text-slate-100 transition-colors duration-300">
+  <body>
     <div id="root"></div>
     <script type="module" src="/index.tsx"></script>
   </body>
