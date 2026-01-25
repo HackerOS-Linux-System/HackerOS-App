@@ -1,91 +1,146 @@
 import React from 'react';
-import { Moon, Sun, Smartphone, Github, ShieldCheck } from 'lucide-react';
+import { Smartphone, Github, ShieldCheck, Bell, ChevronRight, Palette, Layers, Info } from 'lucide-react';
+import { ThemeId, Theme } from '../types';
+import { THEMES } from '../utils/theme';
 
 interface SettingsProps {
-  darkMode: boolean;
-  toggleTheme: () => void;
+  currentTheme: ThemeId;
+  setTheme: (id: ThemeId) => void;
 }
 
-export const Settings: React.FC<SettingsProps> = ({ darkMode, toggleTheme }) => {
+export const Settings: React.FC<SettingsProps> = ({ currentTheme, setTheme }) => {
   return (
-    <div className="px-4 pt-4 pb-20 max-w-md mx-auto">
-      <h2 className="text-2xl font-bold mb-6 dark:text-white">Settings</h2>
+    <div className="space-y-6 pb-20">
+    <div className="px-6 pt-2">
+    <h2 className="text-3xl font-mono font-bold text-white mb-1">SYSTEM_CONFIG</h2>
+    <p className="text-muted text-sm">Personalize your experience</p>
+    </div>
 
-      {/* Appearance Section */}
-      <div className="bg-white dark:bg-cardbg rounded-2xl p-4 shadow-sm border border-gray-100 dark:border-gray-700 mb-6">
-        <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-4 ml-1">Appearance</h3>
-        
-        <div className="flex items-center justify-between py-2">
-          <div className="flex items-center gap-3">
-            <div className={`p-2 rounded-lg ${darkMode ? 'bg-indigo-900/50 text-indigo-300' : 'bg-orange-100 text-orange-500'}`}>
-              {darkMode ? <Moon size={20} /> : <Sun size={20} />}
-            </div>
-            <div>
-              <p className="font-medium text-gray-900 dark:text-white">Dark Mode</p>
-              <p className="text-xs text-gray-500">Adjust the app appearance</p>
-            </div>
-          </div>
-          
-          <button 
-            onClick={toggleTheme}
-            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 ${
-              darkMode ? 'bg-primary' : 'bg-gray-200'
-            }`}
-          >
-            <span
-              className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                darkMode ? 'translate-x-6' : 'translate-x-1'
-              }`}
-            />
-          </button>
-        </div>
-      </div>
+    {/* Theme Section */}
+    <section className="px-4">
+    <div className="bg-card/50 backdrop-blur-md border border-white/5 rounded-2xl p-5 shadow-xl">
+    <div className="flex items-center gap-3 mb-4">
+    <Palette className="text-primary" size={20} />
+    <h3 className="font-bold text-sm uppercase tracking-widest text-muted">Theme Engine</h3>
+    </div>
 
-      {/* About Section */}
-      <div className="bg-white dark:bg-cardbg rounded-2xl p-4 shadow-sm border border-gray-100 dark:border-gray-700">
-        <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-4 ml-1">About</h3>
-        
-        <div className="space-y-4">
-          <div className="flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300">
-              <ShieldCheck size={20} />
-            </div>
-            <div>
-              <p className="font-medium text-gray-900 dark:text-white">HackerOS App</p>
-              <p className="text-xs text-gray-500">Version 1.0.0 (Beta)</p>
-            </div>
-          </div>
+    <div className="grid grid-cols-2 gap-3">
+    {Object.values(THEMES).map((theme: Theme) => (
+      <button
+      key={theme.id}
+      onClick={() => setTheme(theme.id)}
+      className={`
+        relative overflow-hidden rounded-xl p-3 border text-left transition-all duration-200
+        ${currentTheme === theme.id
+          ? 'border-primary bg-primary/10 shadow-[0_0_15px_-5px_rgb(var(--color-primary))]'
+    : 'border-white/5 bg-background/50 hover:bg-white/5'}
+    `}
+    >
+    <div className="flex items-center justify-between mb-2">
+    <div
+    className="w-8 h-8 rounded-lg shadow-lg"
+    style={{ backgroundColor: `rgb(${theme.colors.primary})` }}
+    />
+    {currentTheme === theme.id && (
+      <div className="w-2 h-2 rounded-full bg-primary animate-pulse" />
+    )}
+    </div>
+    <p className={`text-xs font-bold ${currentTheme === theme.id ? 'text-white' : 'text-muted'}`}>
+    {theme.name}
+    </p>
+    </button>
+    ))}
+    </div>
+    </div>
+    </section>
 
-           <a 
-            href="https://github.com/HackerOS-Linux-System" 
-            target="_blank" 
-            rel="noreferrer"
-            className="flex items-center gap-3 group cursor-pointer"
-          >
-            <div className="p-2 rounded-lg bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 group-hover:text-primary dark:group-hover:text-primary transition-colors">
-              <Github size={20} />
-            </div>
-            <div>
-              <p className="font-medium text-gray-900 dark:text-white group-hover:text-primary transition-colors">GitHub Repository</p>
-              <p className="text-xs text-gray-500">View source code</p>
-            </div>
-          </a>
+    {/* Preferences Section */}
+    <section className="px-4">
+    <div className="bg-card/50 backdrop-blur-md border border-white/5 rounded-2xl overflow-hidden shadow-xl">
+    <div className="p-4 border-b border-white/5 flex items-center gap-3">
+    <Layers className="text-primary" size={20} />
+    <h3 className="font-bold text-sm uppercase tracking-widest text-muted">Preferences</h3>
+    </div>
 
-          <div className="flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300">
-              <Smartphone size={20} />
-            </div>
-            <div>
-              <p className="font-medium text-gray-900 dark:text-white">Build</p>
-              <p className="text-xs text-gray-500">React + Capacitor</p>
-            </div>
-          </div>
-        </div>
-      </div>
+    <div className="divide-y divide-white/5">
+    <div className="p-4 flex items-center justify-between group cursor-pointer hover:bg-white/5 transition-colors">
+    <div className="flex items-center gap-3">
+    <div className="p-2 rounded-lg bg-background text-muted">
+    <Bell size={18} />
+    </div>
+    <div>
+    <p className="text-sm font-medium text-text">Release Notifications</p>
+    <p className="text-xs text-muted">Get alerts for new HackerOS versions</p>
+    </div>
+    </div>
+    <div className="relative inline-flex h-6 w-11 items-center rounded-full bg-primary">
+    <span className="inline-block h-4 w-4 transform translate-x-6 rounded-full bg-white transition-transform"/>
+    </div>
+    </div>
 
-      <div className="mt-8 text-center">
-        <p className="text-xs text-gray-400">Made with &lt;3 for HackerOS Community</p>
-      </div>
+    <div className="p-4 flex items-center justify-between group cursor-pointer hover:bg-white/5 transition-colors">
+    <div className="flex items-center gap-3">
+    <div className="p-2 rounded-lg bg-background text-muted">
+    <Smartphone size={18} />
+    </div>
+    <div>
+    <p className="text-sm font-medium text-text">Cache Management</p>
+    <p className="text-xs text-muted">0.4 MB used</p>
+    </div>
+    </div>
+    <ChevronRight size={16} className="text-muted" />
+    </div>
+    </div>
+    </div>
+    </section>
+
+    {/* About Section */}
+    <section className="px-4">
+    <div className="bg-card/50 backdrop-blur-md border border-white/5 rounded-2xl overflow-hidden shadow-xl">
+    <div className="p-4 border-b border-white/5 flex items-center gap-3">
+    <Info className="text-primary" size={20} />
+    <h3 className="font-bold text-sm uppercase tracking-widest text-muted">Information</h3>
+    </div>
+
+    <div className="divide-y divide-white/5">
+    <a
+    href="https://github.com/HackerOS-Linux-System"
+    target="_blank"
+    rel="noreferrer"
+    className="p-4 flex items-center justify-between hover:bg-white/5 transition-colors"
+    >
+    <div className="flex items-center gap-3">
+    <div className="p-2 rounded-lg bg-background text-muted">
+    <Github size={18} />
+    </div>
+    <div>
+    <p className="text-sm font-medium text-text">Source Code</p>
+    <p className="text-xs text-muted">github.com/HackerOS-Linux-System</p>
+    </div>
+    </div>
+    <ChevronRight size={16} className="text-muted" />
+    </a>
+
+    <div className="p-4 flex items-center justify-between">
+    <div className="flex items-center gap-3">
+    <div className="p-2 rounded-lg bg-background text-muted">
+    <ShieldCheck size={18} />
+    </div>
+    <div>
+    <p className="text-sm font-medium text-text">Build Version</p>
+    <p className="text-xs text-muted">v1.0.2-stable (Android)</p>
+    </div>
+    </div>
+    </div>
+    </div>
+    </div>
+    </section>
+
+    <div className="text-center pt-4">
+    <p className="text-[10px] font-mono text-muted/40 uppercase tracking-[0.2em]">
+    Designed for Hackers
+    </p>
+    </div>
     </div>
   );
 };
