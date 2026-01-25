@@ -1,5 +1,142 @@
 [
  V4.2
- Official - / Hydra - 
- More - we need 
+ New:
+ = Zaktualizowano narzędzia CLI
+ = Dodano nową aplikację HackerOS App
+ = Naprawiono narzędzie CLI o nazwie HackerOS-Steam
+ = Dodano prerelease dla edycji atomic
+ = Zaktualizowano edycję cybersecurity o nowe narzędzia i lepszą przeglądarkę
+ Release:
+ = HackerOS Official: 18.01.2026
+ = HackerOS Cybersecurity: 18.01.2026
+
+ V4.1
+ New:
+ = Naprawiono błędy z MOTD
+ = Dodano nową edycję LTS
+ = Zaktualizowano bazę Debiana do Debian Forky
+ = Dodano zaktualizowane narzędzia
+ Release: 
+ = HackerOS Official: 26.12.2025
+ = HackerOS Hydra: 26.12.2025
+ = HackerOS Cybersecurity: 26.12.2026
+ = HackerOS LTS: 26.12.2025
+
+ V4.0
+ New:
+ = Zaktualizowano narzędzia hacker, hli, hackerc, bytes, hpm oraz aplikacje
+ = Dodano MOTD
+ Release:
+ = HackerOS Official: 8.12.2025
+ = HackerOS Official Gnome: 12.12.2025
+ = HackerOS Official Xfce: 12.12.2025
+ = HackerOS Hydra: 8.12.2025
+ = HackerOS Cybersecurity: 9.12.2025
+
+ V3.9
+ New:
+ = Zaktualizowano bazę do najnowszego Debiana.
+ = Rozbudowano skrypty: unpack-xanmod i unpack-liquorix. Rozbudowano narzędzie hacker oraz zaktualizowano aplikację update system.
+ Release:
+ = HackerOS Official: 22.11.2025
+ = HackerOS Hydra: 22.11.2025
+ = HackerOS Cybersecurity: 23.11.2025
+
+ V3.8
+ New:
+ = Zaktualizowano narzędzia - hacker, hackerc.
+ = Naprawiono skrypty.
+ Release:
+ = HackerOS Official: 16.11.2025
+ = HackerOS Hydra: 16.11.2025
+ = HackerOS Cybersecurity: 16.11.2025
+
+ V3.7
+ New:
+ = Zaktualizowano bazę do najnowszego Debiana, dodano najnowsze narzędzia: HackerOS Welcome, hacker oraz narzędzia dla języka programowania hacker - hackerc
+ = Naprawiono skrypty uruchamiające hacker mode
+ Release:
+ = HackerOS Official: 10.11.2025
+ = HackerOS Hydra: 10.11.2025
+ = HackerOS Cybersecurity: 10.11.2025
+
+ V3.6
+ New:
+ = Zaktualizowano bazę do najnowszego Debiana
+ = Naprawiono błędy w aplikacji hacker launcher
+ = Naprawiono błędy w hacker mode
+ = Naprawiono/Rozbudowano skrypty
+ Release:
+ = HackerOS Official: 07.11.2025
+ = HackerOS Hydra: 07.11.2025
+ = HackerOS Cybersecurity: 07.11.2025
+
+ V3.5
+ New:
+ = Zaktualizowano bazę do najnowszego Debiana
+ = Dodano język programowania hacker lang
+ = Zaktualizowano hacker mode aby działał tylko i wyłącznie na x11 (hacker mode będzie działać zarówno na nowych gpu jak i na starych)
+ = Zaktualizowano permisje dla plików
+ Release:
+ = HackerOS Official: 29.10.2025
+ = HackerOS Hydra: 29.10.2025
+ = HackerOS Cybersecurity: 29.10.2025
+
+ V3.4
+ New:
+ = Usunięto narzędzie hacker-update
+ = Od teraz nie będzie wbudowanego jądra xanmod, zainstaluj je i ustaw jako domyślne za pomocą polecenia set-xanmod-default
+ = Rozbudowano narzędzie hacker
+ = Usunięto gry HackerOS, dodano jedną aplikację która uruchamia wszystkie gry HackerOS
+ = Od teraz hacker mode nie będzie odpalał za pomocą gamescope tylko cage
+ = Dodano aplikację inspirowaną ASUS Armoury Crate o nazwie HackerOS Game Mode
+ Release:
+ = HackerOS Official: 24.10.2025
+ = HackerOS Hydra: 24.10.2025
+ = HackerOS Cybersecurity: 24.10.2025
+
+ V3.3
+ New:
+ = Zaktualizowano bazę do najnowszego Debiana.
+ = Rozbudowano Hacker Launcher, gotowy do uruchamiania gier i plików .exe.
+ = Naprawiono i przebudowano Hacker Mode.
+ = Zaktualizowano skrypty.
+ Release:
+ = HackerOS Official: 14.10.2025
+ = HackerOS Hydra: 14.10.2025
+ = HackerOS Cybersecurity: 14.10.2025
+ = HackerOS Nvidia: 14.10.2025
+
+ V3.2
+ New:
+ = Zaktualizowana baza do najnowszego Debian Testing.
+ = Zaktualizowano tapety.
+ = Zaktualizowano skrypty.
+ = Naprawiono kilka błędów.
+ Release:
+ = HackerOS Official: 29.09.2025
+ = HackerOS Hydra: 29.09.2025
+ = HackerOS Cybersecurity: 30.09.2025
+
+ V3.1
+ New:
+ = Zaktualizowana baza do najnowszego Debian Testing.
+ = Naprawiono błędy z tapetami.
+ = Naprawiono błędy z jądrem.
+ = Dodano nową grę The Racer i nową aplikację HackerOS Welcome.
+ Release:
+ = HackerOS Official: 20.09.2025
+ = HackerOS Cybersecurity: 20.09.2025
+
+ V3.0
+ New:
+ = Zaktualizowano bazę do najnowszego Debian Testing.
+ = Poprawiono wsparcie dla sterowników Nvidia dla lepszej wydajności w grach.
+ = Dodano zaawansowane narzędzia cybersecurity, takie jak ulepszone firewalle i wykrywanie intruzów.
+ = Poprawki błędów, dodano i ulepszono narzędzia cli oraz gry hackeros.
+ = Poprawki błędów i ulepszenia stabilności na podstawie opinii użytkowników.
+ Release:
+ = HackerOS Official: 13.09.2025
+ = HackerOS Nvidia: 13.09.2025
+ = HackerOS Cybersecurity: 13.09.2025
 ]
