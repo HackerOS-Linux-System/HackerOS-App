@@ -9,7 +9,8 @@
     "preview": "vite preview",
     "android:init": "npm run build && npx cap add android",
     "android:sync": "npm run build && npx cap sync android",
-    "android:open": "npx cap open android"
+    "android:open": "npx cap open android",
+    "android:build-cmd": "cd android && ./gradlew assembleDebug"
   },
   "dependencies": {
     "react": "^18.2.0",
@@ -20,7 +21,9 @@
     "tailwind-merge": "^2.2.1",
     "@capacitor/core": "^5.7.0",
     "@capacitor/android": "^5.7.0",
-    "@capacitor/ios": "^5.7.0"
+    "@capacitor/ios": "^5.7.0",
+    "@capacitor/filesystem": "^5.2.0",
+    "@capacitor/toast": "^5.0.0"
   },
   "devDependencies": {
     "@types/react": "^18.2.0",
