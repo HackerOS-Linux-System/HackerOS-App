@@ -16,3 +16,15 @@ export interface Wallpaper {
   thumbnail: string;
   name: string;
 }
+
+export type ThemeId = 'hacker' | 'cyberpunk' | 'ocean' | 'sunset';
+
+export interface Theme {
+  id: ThemeId;
+  name: string;
+  colors: {
+    primary: string; // RGB values like "16 185 129"
+    background: string;
+    card: string;
+  };
+}
