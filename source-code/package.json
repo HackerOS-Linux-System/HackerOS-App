@@ -5,16 +5,22 @@
   "main": "index.tsx",
   "scripts": {
     "start": "vite",
-    "build": "vite build",
+    "build": "tsc && vite build",
     "preview": "vite preview",
-    "dist": "npm run build && npx cap sync android && echo 'Android project synced. Open Android Studio to build APK.'",
-    "dist:desktop": "npm run build && echo 'To build for desktop, integrate Electron here.'"
+    "android:init": "npm run build && npx cap add android",
+    "android:sync": "npm run build && npx cap sync android",
+    "android:open": "npx cap open android"
   },
   "dependencies": {
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "lucide-react": "^0.344.0",
-    "framer-motion": "^11.0.8"
+    "framer-motion": "^11.0.8",
+    "clsx": "^2.1.0",
+    "tailwind-merge": "^2.2.1",
+    "@capacitor/core": "^5.7.0",
+    "@capacitor/android": "^5.7.0",
+    "@capacitor/ios": "^5.7.0"
   },
   "devDependencies": {
     "@types/react": "^18.2.0",
@@ -25,8 +31,6 @@
     "autoprefixer": "^10.4.16",
     "postcss": "^8.4.31",
     "tailwindcss": "^3.3.5",
-    "@capacitor/core": "^5.7.0",
-    "@capacitor/cli": "^5.7.0",
-    "@capacitor/android": "^5.7.0"
+    "@capacitor/cli": "^5.7.0"
   }
 }
