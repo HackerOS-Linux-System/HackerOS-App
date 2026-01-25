@@ -1,5 +1,6 @@
 export interface ReleaseInfo {
   version: string;
+  description: string;
   editions: string;
   news: string;
 }
@@ -7,6 +8,8 @@ export interface ReleaseInfo {
 export enum AppSection {
   RELEASES = 'releases',
   WALLPAPERS = 'wallpapers',
+  GALLERY = 'gallery',
+  TEAM = 'team',
   SETTINGS = 'settings'
 }
 
@@ -17,7 +20,8 @@ export interface Wallpaper {
   name: string;
 }
 
-export type ThemeId = 'hacker' | 'cyberpunk' | 'ocean' | 'sunset';
+export type ThemeId = 'hacker' | 'cyberpunk' | 'ocean' | 'sunset' | 'matrix' | 'crimson' | 'royal';
+export type Language = 'pl' | 'en' | 'de' | 'es' | 'fr';
 
 export interface Theme {
   id: ThemeId;
