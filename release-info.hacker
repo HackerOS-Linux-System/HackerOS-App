@@ -1,5 +1,7 @@
 [
  V4.2
+ description:
+ = Nowa wersja z zaktualizowanymi narzędziami CLI i nowymi funkcjami.
  New:
  = Zaktualizowano narzędzia CLI
  = Dodano nową aplikację HackerOS App
@@ -11,6 +13,8 @@
  = HackerOS Cybersecurity: 18.01.2026
 
  V4.1
+ description:
+ = Nowa wersja z naprawionymi błędami i nowymi funkcjami.
  New:
  = Naprawiono błędy z MOTD
  = Dodano nową edycję LTS
@@ -23,6 +27,8 @@
  = HackerOS LTS: 26.12.2025
 
  V4.0
+ description:
+ = Nowa wersja z zaktualizowanymi narzędziami oraz aplikacjami.
  New:
  = Zaktualizowano narzędzia hacker, hli, hackerc, bytes, hpm oraz aplikacje
  = Dodano MOTD
@@ -34,6 +40,8 @@
  = HackerOS Cybersecurity: 9.12.2025
 
  V3.9
+ description:
+ = Nowa wersja z rozbudowanymi narzędziami.
  New:
  = Zaktualizowano bazę do najnowszego Debiana.
  = Rozbudowano skrypty: unpack-xanmod i unpack-liquorix. Rozbudowano narzędzie hacker oraz zaktualizowano aplikację update system.
@@ -43,6 +51,8 @@
  = HackerOS Cybersecurity: 23.11.2025
 
  V3.8
+ description:
+ = Nowa wersja z zaktualizowanymi narzędziami i naprawionymi skryptami.
  New:
  = Zaktualizowano narzędzia - hacker, hackerc.
  = Naprawiono skrypty.
@@ -52,6 +62,8 @@
  = HackerOS Cybersecurity: 16.11.2025
 
  V3.7
+ description:
+ = Nowa wersja z naprawionymi skryptami oraz rozbudowanymi narzędziami hacker, hackerc
  New:
  = Zaktualizowano bazę do najnowszego Debiana, dodano najnowsze narzędzia: HackerOS Welcome, hacker oraz narzędzia dla języka programowania hacker - hackerc
  = Naprawiono skrypty uruchamiające hacker mode
@@ -61,6 +73,8 @@
  = HackerOS Cybersecurity: 10.11.2025
 
  V3.6
+ description: 
+ = Nowa wersja z naprawionymi błędami i modyfikacjami
  New:
  = Zaktualizowano bazę do najnowszego Debiana
  = Naprawiono błędy w aplikacji hacker launcher
@@ -72,6 +86,8 @@
  = HackerOS Cybersecurity: 07.11.2025
 
  V3.5
+ description:
+ = Nowa wersja z aktualizacją bazy, dodanym językiem programowania hacker lang oraz innymi zmianami.
  New:
  = Zaktualizowano bazę do najnowszego Debiana
  = Dodano język programowania hacker lang
@@ -83,6 +99,8 @@
  = HackerOS Cybersecurity: 29.10.2025
 
  V3.4
+ description:
+ = Usunięto edycję Nvidia, wiele zmian.
  New:
  = Usunięto narzędzie hacker-update
  = Od teraz nie będzie wbudowanego jądra xanmod, zainstaluj je i ustaw jako domyślne za pomocą polecenia set-xanmod-default
@@ -96,6 +114,8 @@
  = HackerOS Cybersecurity: 24.10.2025
 
  V3.3
+ description:
+ = Dodano nową edycję Nvidia.
  New:
  = Zaktualizowano bazę do najnowszego Debiana.
  = Rozbudowano Hacker Launcher, gotowy do uruchamiania gier i plików .exe.
@@ -108,6 +128,8 @@
  = HackerOS Nvidia: 14.10.2025
 
  V3.2
+ description:
+ = Dodano nową edycję Hydra Edition oraz zaktualizowano tapety.
  New:
  = Zaktualizowana baza do najnowszego Debian Testing.
  = Zaktualizowano tapety.
@@ -119,6 +141,8 @@
  = HackerOS Cybersecurity: 30.09.2025
 
  V3.1
+ description:
+ = Najnowsza wersja, poprawiono wiele znanych błędów z HackerOS V3.0.
  New:
  = Zaktualizowana baza do najnowszego Debian Testing.
  = Naprawiono błędy z tapetami.
@@ -129,6 +153,8 @@
  = HackerOS Cybersecurity: 20.09.2025
 
  V3.0
+ description:
+ = Najnowsza główna wersja z znacznymi ulepszeniami: zmieniono z jądra xanmod na xanmod lts (lepsza obsługa urządzeń).
  New:
  = Zaktualizowano bazę do najnowszego Debian Testing.
  = Poprawiono wsparcie dla sterowników Nvidia dla lepszej wydajności w grach.
