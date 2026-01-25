@@ -8,40 +8,50 @@ interface NavbarProps {
 }
 
 export const Navbar: React.FC<NavbarProps> = ({ currentSection, onSectionChange }) => {
-  const getButtonClass = (section: AppSection) => {
-    const base = "flex flex-col items-center justify-center w-full h-full transition-colors duration-200";
-    const active = "text-primary dark:text-primary-light";
-    const inactive = "text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-200";
-    return `${base} ${currentSection === section ? active : inactive}`;
-  };
+  const navItems = [
+    { id: AppSection.RELEASES, icon: LayoutList, label: 'Systems' },
+    { id: AppSection.WALLPAPERS, icon: Image, label: 'Wallpapers' },
+    { id: AppSection.SETTINGS, icon: Settings, label: 'Config' },
+  ];
 
   return (
-    <nav className="fixed bottom-0 left-0 w-full h-16 bg-white dark:bg-cardbg border-t border-gray-200 dark:border-gray-700 shadow-lg z-50">
-      <div className="flex justify-around items-center h-full max-w-md mx-auto">
-        <button 
-          onClick={() => onSectionChange(AppSection.RELEASES)}
-          className={getButtonClass(AppSection.RELEASES)}
+    <nav className="fixed bottom-0 left-0 w-full z-50">
+    {/* Glass gradient background */}
+    <div className="absolute inset-0 bg-background/80 backdrop-blur-lg border-t border-white/5" />
+
+    <div className="relative flex justify-around items-center h-20 max-w-lg mx-auto pb-4 safe-area-bottom">
+    {navItems.map((item) => {
+      const isActive = currentSection === item.id;
+      const Icon = item.icon;
+
+      return (
+        <button
+        key={item.id}
+        onClick={() => onSectionChange(item.id)}
+        className="relative flex flex-col items-center justify-center w-full h-full group"
         >
-          <LayoutList size={24} />
-          <span className="text-xs mt-1 font-medium">Releases</span>
-        </button>
-        
-        <button 
-          onClick={() => onSectionChange(AppSection.WALLPAPERS)}
-          className={getButtonClass(AppSection.WALLPAPERS)}
-        >
-          <Image size={24} />
-          <span className="text-xs mt-1 font-medium">Wallpapers</span>
-        </button>
-        
-        <button 
-          onClick={() => onSectionChange(AppSection.SETTINGS)}
-          className={getButtonClass(AppSection.SETTINGS)}
-        >
-          <Settings size={24} />
-          <span className="text-xs mt-1 font-medium">Settings</span>
-        </button>
-      </div>
+        <div className={`
+          p-1.5 rounded-xl transition-all duration-300 ease-out mb-1
+          ${isActive ? 'bg-primary/20 text-primary translate-y-[-2px]' : 'text-muted group-hover:text-text'}
+          `}>
+          <Icon size={24} strokeWidth={isActive ? 2.5 : 2} />
+          </div>
+
+          <span className={`
+            text-[10px] font-bold tracking-wider transition-colors duration-300 uppercase
+            ${isActive ? 'text-primary' : 'text-muted/60'}
+            `}>
+            {item.label}
+            </span>
+
+            {/* Active Indicator Dot */}
+            {isActive && (
+              <span className="absolute bottom-2 w-1 h-1 bg-primary rounded-full shadow-[0_0_8px_rgb(var(--color-primary))]" />
+            )}
+            </button>
+      );
+    })}
+    </div>
     </nav>
   );
 };
