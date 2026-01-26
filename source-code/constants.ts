@@ -1,5 +1,8 @@
-// Note: Converted github blob links to raw links to ensure they load correctly in the app
+export const APP_VERSION = "0.2";
 export const RELEASE_INFO_URL = 'https://raw.githubusercontent.com/HackerOS-Linux-System/HackerOS-App/main/release-info.hacker';
+// Using raw.githubusercontent to get the plain text content of the version file
+export const VERSION_CHECK_URL = 'https://raw.githubusercontent.com/HackerOS-Linux-System/HackerOS-App/main/version.hacker';
+export const GALLERY_API_URL = 'https://api.github.com/repos/HackerOS-Linux-System/HackerOS-App/contents/gallery';
 
 export const WALLPAPERS = [
   {
