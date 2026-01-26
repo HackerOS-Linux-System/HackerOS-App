@@ -38,6 +38,12 @@ export const TRANSLATIONS = {
     settings_social: "Łącze HackerOS",
     settings_pref: "Preferencje",
     settings_info: "Informacje",
+    settings_check_update: "Sprawdź aktualizacje",
+    settings_version_current: "Aktualna wersja",
+    settings_version_latest: "Dostępna nowa wersja",
+    settings_up_to_date: "System aktualny",
+    settings_checking: "Sprawdzanie...",
+    settings_update_error: "Błąd sprawdzania",
     
     pref_notifications: "Powiadomienia o Wydaniach",
     pref_notifications_desc: "Otrzymuj alerty o nowych wersjach",
@@ -49,7 +55,10 @@ export const TRANSLATIONS = {
     error_network: "Błąd sieci",
     error_signal: "UTRACONO SYGNAŁ",
     retry: "PONÓW POŁĄCZENIE",
-    decrypting: "DESZYFROWANIE PAKIETÓW..."
+    decrypting: "DESZYFROWANIE PAKIETÓW...",
+    
+    gallery_empty: "Brak obrazów w repozytorium",
+    gallery_loading: "ŁADOWANIE ZASOBÓW..."
   },
   en: {
     nav_releases: "Releases",
@@ -88,6 +97,12 @@ export const TRANSLATIONS = {
     settings_social: "HackerOS Uplink",
     settings_pref: "Preferences",
     settings_info: "Information",
+    settings_check_update: "Check for updates",
+    settings_version_current: "Current Version",
+    settings_version_latest: "New version available",
+    settings_up_to_date: "System up to date",
+    settings_checking: "Checking...",
+    settings_update_error: "Check failed",
     
     pref_notifications: "Release Notifications",
     pref_notifications_desc: "Get alerts for new HackerOS versions",
@@ -99,7 +114,10 @@ export const TRANSLATIONS = {
     error_network: "Network error",
     error_signal: "SIGNAL_LOST",
     retry: "RETRY_CONNECTION",
-    decrypting: "DECRYPTING_PACKETS..."
+    decrypting: "DECRYPTING_PACKETS...",
+    
+    gallery_empty: "No images in repository",
+    gallery_loading: "LOADING ASSETS..."
   },
   de: {
     nav_releases: "Releases",
@@ -138,6 +156,12 @@ export const TRANSLATIONS = {
     settings_social: "HackerOS Uplink",
     settings_pref: "Einstellungen",
     settings_info: "Informationen",
+    settings_check_update: "Auf Updates prüfen",
+    settings_version_current: "Aktuelle Version",
+    settings_version_latest: "Neue Version verfügbar",
+    settings_up_to_date: "System auf dem neuesten Stand",
+    settings_checking: "Prüfung...",
+    settings_update_error: "Prüfung fehlgeschlagen",
     
     pref_notifications: "Release-Benachrichtigungen",
     pref_notifications_desc: "Erhalten Sie Warnungen für neue Versionen",
@@ -149,7 +173,10 @@ export const TRANSLATIONS = {
     error_network: "Netzwerkfehler",
     error_signal: "SIGNAL VERLOREN",
     retry: "VERBINDUNG WIEDERHOLEN",
-    decrypting: "PAKETE ENTSCHLÜSSELN..."
+    decrypting: "PAKETE ENTSCHLÜSSELN...",
+
+    gallery_empty: "Keine Bilder im Repository",
+    gallery_loading: "LADEN VON RESSOURCEN..."
   },
   es: {
     nav_releases: "Versiones",
@@ -188,6 +215,12 @@ export const TRANSLATIONS = {
     settings_social: "Enlace HackerOS",
     settings_pref: "Preferencias",
     settings_info: "Información",
+    settings_check_update: "Buscar actualizaciones",
+    settings_version_current: "Versión actual",
+    settings_version_latest: "Nueva versión disponible",
+    settings_up_to_date: "Sistema actualizado",
+    settings_checking: "Comprobando...",
+    settings_update_error: "Error de comprobación",
     
     pref_notifications: "Notificaciones",
     pref_notifications_desc: "Alertas de nuevas versiones",
@@ -199,7 +232,10 @@ export const TRANSLATIONS = {
     error_network: "Error de red",
     error_signal: "SEÑAL PERDIDA",
     retry: "REINTENTAR CONEXIÓN",
-    decrypting: "DESCIFRANDO PAQUETES..."
+    decrypting: "DESCIFRANDO PAQUETES...",
+
+    gallery_empty: "No hay imágenes en el repositorio",
+    gallery_loading: "CARGANDO ACTIVOS..."
   },
   fr: {
     nav_releases: "Versions",
@@ -238,9 +274,15 @@ export const TRANSLATIONS = {
     settings_social: "Lien HackerOS",
     settings_pref: "Préférences",
     settings_info: "Information",
+    settings_check_update: "Vérifier les mises à jour",
+    settings_version_current: "Version actuelle",
+    settings_version_latest: "Nouvelle version disponible",
+    settings_up_to_date: "Système à jour",
+    settings_checking: "Vérification...",
+    settings_update_error: "Échec de la vérification",
     
     pref_notifications: "Notifications",
-    pref_notifications_desc: "Alertes pour nouvelles versions",
+    pref_notifications_desc: "Alertas pour nouvelles versions",
     pref_cache: "Gestion du Cache",
     
     role_founder: "Fondateur de HackerOS",
@@ -249,6 +291,9 @@ export const TRANSLATIONS = {
     error_network: "Erreur réseau",
     error_signal: "SIGNAL PERDU",
     retry: "RÉESSAYER LA CONNEXION",
-    decrypting: "DÉCHIFFREMENT..."
+    decrypting: "DÉCHIFFREMENT...",
+
+    gallery_empty: "Aucune image dans le dépôt",
+    gallery_loading: "CHARGEMENT DES RESSOURCES..."
   }
 };
