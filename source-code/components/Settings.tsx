@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { Smartphone, Github, ShieldCheck, Bell, ChevronRight, Palette, Layers, Info, ExternalLink, Globe, MessageSquare, Youtube, Languages } from 'lucide-react';
+import { Smartphone, Github, ShieldCheck, Bell, ChevronRight, Palette, Layers, Info, ExternalLink, Globe, MessageSquare, Youtube, Languages, RefreshCcw, CheckCircle, AlertTriangle, Download, HardDriveDownload } from 'lucide-react';
 import { ThemeId, Theme, Language } from '../types';
 import { THEMES } from '../utils/theme';
 import { TRANSLATIONS } from '../utils/translations';
+import { APP_VERSION, VERSION_CHECK_URL } from '../constants';
+import { Toast } from '@capacitor/toast';
 
 interface SettingsProps {
   currentTheme: ThemeId;
@@ -33,6 +35,8 @@ const SocialLink = ({ href, label, icon: Icon, subLabel }: { href: string, label
 
 export const Settings: React.FC<SettingsProps> = ({ currentTheme, setTheme, language, setLanguage }) => {
   const [notificationsEnabled, setNotificationsEnabled] = useState(false);
+  const [checkStatus, setCheckStatus] = useState<'idle' | 'checking' | 'uptodate' | 'update_available' | 'error'>('idle');
+  const [remoteVersion, setRemoteVersion] = useState(APP_VERSION);
   const t = TRANSLATIONS[language];
 
   useEffect(() => {
@@ -44,6 +48,54 @@ export const Settings: React.FC<SettingsProps> = ({ currentTheme, setTheme, lang
     const newState = !notificationsEnabled;
     setNotificationsEnabled(newState);
     localStorage.setItem('hackeros_notifications', String(newState));
+  };
+
+  const checkForUpdates = async () => {
+    setCheckStatus('checking');
+    try {
+      // Fetch with cache busting to prevent stale version data
+      const response = await fetch(`${VERSION_CHECK_URL}?t=${Date.now()}`);
+      if (!response.ok) throw new Error("Failed to fetch version");
+      
+      const text = await response.text();
+      // Parse format: [ 0.2 ]
+      // Regex looks for brackets and captures content inside
+      const match = text.match(/\[\s*([\d.]+)\s*\]/);
+      
+      if (match && match[1]) {
+        const remoteVer = match[1];
+        setRemoteVersion(remoteVer);
+
+        // Simple string comparison for versions (assuming simplified standard numbering)
+        if (parseFloat(remoteVer) > parseFloat(APP_VERSION)) {
+            setCheckStatus('update_available');
+        } else {
+            setCheckStatus('uptodate');
+        }
+      } else {
+        throw new Error("Invalid version format");
+      }
+
+    } catch (e) {
+      console.error(e);
+      setCheckStatus('error');
+    }
+  };
+
+  const performUpdate = async () => {
+    // Construct the APK URL based on the remote version
+    const apkUrl = `https://github.com/HackerOS-Linux-System/HackerOS-App/releases/download/v${remoteVersion}/HackerOS-App-${remoteVersion}.apk`;
+    
+    await Toast.show({
+      text: 'Starting download... Check your notifications.',
+      duration: 'long'
+    });
+
+    // We use window.open to trigger the system's download manager.
+    // On Android, downloading an APK via the system browser/manager allows the "Install" prompt 
+    // to appear when the user clicks the notification. This handles the "Install" step 
+    // by delegating it to the OS Package Installer.
+    window.open(apkUrl, '_system');
   };
 
   const languages: { code: Language; label: string; flag: string }[] = [
@@ -244,16 +296,53 @@ export const Settings: React.FC<SettingsProps> = ({ currentTheme, setTheme, lang
                <ChevronRight size={16} className="text-muted" />
              </a>
 
-             <div className="p-4 flex items-center justify-between">
+             <div className="p-4 flex items-center justify-between flex-wrap gap-3">
                <div className="flex items-center gap-3">
                  <div className="p-2 rounded-lg bg-background text-muted">
                    <ShieldCheck size={18} />
                  </div>
                  <div>
                    <p className="text-sm font-medium text-text">App Version</p>
-                   <p className="text-xs text-muted">v0.1-beta</p>
+                   <p className="text-xs text-muted">
+                      {checkStatus === 'update_available' 
+                        ? `${t.settings_version_latest}: v${remoteVersion}` 
+                        : `v${APP_VERSION}`}
+                   </p>
                  </div>
                </div>
+                
+                {checkStatus === 'update_available' ? (
+                  <button 
+                    onClick={performUpdate}
+                    className="ml-auto px-4 py-2 rounded-lg text-xs font-bold bg-primary text-background border border-primary/50 shadow-[0_0_15px_-5px_rgb(var(--color-primary))] flex items-center gap-2 animate-pulse hover:animate-none hover:bg-primary/90 transition-all"
+                  >
+                    <HardDriveDownload size={14} />
+                    <span>UPDATE TO v{remoteVersion}</span>
+                  </button>
+                ) : (
+                  <button 
+                    onClick={checkForUpdates}
+                    disabled={checkStatus === 'checking'}
+                    className={`
+                      ml-auto px-3 py-1.5 rounded-lg text-xs font-bold border transition-all flex items-center gap-2
+                      ${checkStatus === 'checking' ? 'bg-white/5 border-white/10 text-muted cursor-wait' : ''}
+                      ${checkStatus === 'idle' ? 'bg-white/5 border-white/10 text-primary hover:bg-white/10' : ''}
+                      ${checkStatus === 'uptodate' ? 'bg-green-500/10 border-green-500/20 text-green-500' : ''}
+                      ${checkStatus === 'error' ? 'bg-red-500/10 border-red-500/20 text-red-500' : ''}
+                    `}
+                  >
+                    {checkStatus === 'checking' && <RefreshCcw size={12} className="animate-spin" />}
+                    {checkStatus === 'uptodate' && <CheckCircle size={12} />}
+                    {checkStatus === 'error' && <AlertTriangle size={12} />}
+                    
+                    <span>
+                      {checkStatus === 'idle' && t.settings_check_update}
+                      {checkStatus === 'checking' && t.settings_checking}
+                      {checkStatus === 'uptodate' && t.settings_up_to_date}
+                      {checkStatus === 'error' && t.settings_update_error}
+                    </span>
+                  </button>
+                )}
              </div>
            </div>
         </div>
