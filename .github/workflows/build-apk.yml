@@ -20,11 +20,20 @@ jobs:
 
       - name: Install dependencies
         working-directory: ./source-code
-        run: npm install
+        run: |
+          npm install
+          # Instalujemy narzędzie do generowania ikon, jeśli nie ma go w projekcie
+          npm install @capacitor/assets --save-dev
 
       - name: Build Web Assets
         working-directory: ./source-code
         run: npm run build
+
+      - name: Generate Android Icons and Splash
+        working-directory: ./source-code
+        # To narzędzie automatycznie wygeneruje ikony w android/app/src/main/res/
+        # Upewnij się, że masz plik assets/icon-only.png lub assets/icon.png
+        run: npx capacitor-assets generate --android
 
       - name: Setup Java
         uses: actions/setup-java@v3
