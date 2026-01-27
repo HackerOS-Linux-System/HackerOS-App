@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Smartphone, Github, ShieldCheck, Bell, ChevronRight, Palette, Layers, Info, ExternalLink, Globe, MessageSquare, Youtube, Languages, RefreshCcw, CheckCircle, AlertTriangle, Download, HardDriveDownload } from 'lucide-react';
+import { Smartphone, Github, ShieldCheck, Bell, ChevronRight, Palette, Layers, Info, ExternalLink, Globe, MessageSquare, Youtube, Languages, RefreshCcw, CheckCircle, AlertTriangle, HardDriveDownload } from 'lucide-react';
 import { ThemeId, Theme, Language } from '../types';
 import { THEMES } from '../utils/theme';
 import { TRANSLATIONS } from '../utils/translations';
@@ -58,16 +58,19 @@ export const Settings: React.FC<SettingsProps> = ({ currentTheme, setTheme, lang
       if (!response.ok) throw new Error("Failed to fetch version");
       
       const text = await response.text();
-      // Parse format: [ 0.2 ]
-      // Regex looks for brackets and captures content inside
-      const match = text.match(/\[\s*([\d.]+)\s*\]/);
+      
+      // Robust regex to find version number. 
+      // Matches: "0.3", "v0.3", "[ 0.3 ]", "ver: 0.3"
+      // It captures the digits and dots.
+      const match = text.match(/(?:v|ver|version|\[)?\s*([\d.]+)\s*(?:\])?/i);
       
       if (match && match[1]) {
         const remoteVer = match[1];
         setRemoteVersion(remoteVer);
 
-        // Simple string comparison for versions (assuming simplified standard numbering)
-        if (parseFloat(remoteVer) > parseFloat(APP_VERSION)) {
+        // Simple comparison: if remote string is different and "larger" (lexicographically for now)
+        // Ideally use semver comparison, but for simple app versions this suffices
+        if (remoteVer !== APP_VERSION && parseFloat(remoteVer) > parseFloat(APP_VERSION)) {
             setCheckStatus('update_available');
         } else {
             setCheckStatus('uptodate');
@@ -87,14 +90,11 @@ export const Settings: React.FC<SettingsProps> = ({ currentTheme, setTheme, lang
     const apkUrl = `https://github.com/HackerOS-Linux-System/HackerOS-App/releases/download/v${remoteVersion}/HackerOS-App-${remoteVersion}.apk`;
     
     await Toast.show({
-      text: 'Starting download... Check your notifications.',
+      text: 'Starting download... Check notifications.',
       duration: 'long'
     });
 
-    // We use window.open to trigger the system's download manager.
-    // On Android, downloading an APK via the system browser/manager allows the "Install" prompt 
-    // to appear when the user clicks the notification. This handles the "Install" step 
-    // by delegating it to the OS Package Installer.
+    // Open system browser to handle download and installation prompt
     window.open(apkUrl, '_system');
   };
 
@@ -269,7 +269,7 @@ export const Settings: React.FC<SettingsProps> = ({ currentTheme, setTheme, lang
         </div>
       </section>
 
-      {/* About Section */}
+      {/* About & Updates Section */}
       <section className="px-4">
         <div className="bg-card/50 backdrop-blur-md border border-white/5 rounded-2xl overflow-hidden shadow-xl">
            <div className="p-4 border-b border-white/5 flex items-center gap-3">
@@ -296,27 +296,43 @@ export const Settings: React.FC<SettingsProps> = ({ currentTheme, setTheme, lang
                <ChevronRight size={16} className="text-muted" />
              </a>
 
-             <div className="p-4 flex items-center justify-between flex-wrap gap-3">
-               <div className="flex items-center gap-3">
-                 <div className="p-2 rounded-lg bg-background text-muted">
-                   <ShieldCheck size={18} />
+             <div className="p-4 flex flex-col gap-4">
+               <div className="flex items-center justify-between">
+                 <div className="flex items-center gap-3">
+                   <div className="p-2 rounded-lg bg-background text-muted">
+                     <ShieldCheck size={18} />
+                   </div>
+                   <div>
+                     <p className="text-sm font-medium text-text">System Version</p>
+                     <p className="text-xs text-muted font-mono">
+                        v{APP_VERSION}
+                     </p>
+                   </div>
                  </div>
-                 <div>
-                   <p className="text-sm font-medium text-text">App Version</p>
-                   <p className="text-xs text-muted">
-                      {checkStatus === 'update_available' 
-                        ? `${t.settings_version_latest}: v${remoteVersion}` 
-                        : `v${APP_VERSION}`}
-                   </p>
-                 </div>
+                 
+                 {/* Status Badge */}
+                 {checkStatus !== 'idle' && (
+                    <div className={`px-2 py-0.5 rounded text-[10px] font-bold border uppercase tracking-wider
+                        ${checkStatus === 'checking' ? 'border-primary/50 text-primary' : ''}
+                        ${checkStatus === 'uptodate' ? 'border-green-500/50 text-green-500' : ''}
+                        ${checkStatus === 'update_available' ? 'border-amber-500/50 text-amber-500' : ''}
+                        ${checkStatus === 'error' ? 'border-red-500/50 text-red-500' : ''}
+                    `}>
+                        {checkStatus === 'checking' && 'SCANNING...'}
+                        {checkStatus === 'uptodate' && 'LATEST'}
+                        {checkStatus === 'update_available' && 'OUTDATED'}
+                        {checkStatus === 'error' && 'ERROR'}
+                    </div>
+                 )}
                </div>
-                
-                {checkStatus === 'update_available' ? (
+
+               {/* Action Button */}
+               {checkStatus === 'update_available' ? (
                   <button 
                     onClick={performUpdate}
-                    className="ml-auto px-4 py-2 rounded-lg text-xs font-bold bg-primary text-background border border-primary/50 shadow-[0_0_15px_-5px_rgb(var(--color-primary))] flex items-center gap-2 animate-pulse hover:animate-none hover:bg-primary/90 transition-all"
+                    className="w-full py-3 rounded-lg text-xs font-bold bg-primary text-background border border-primary/50 shadow-[0_0_15px_-5px_rgb(var(--color-primary))] flex items-center justify-center gap-2 animate-pulse hover:animate-none hover:bg-primary/90 transition-all"
                   >
-                    <HardDriveDownload size={14} />
+                    <HardDriveDownload size={16} />
                     <span>UPDATE TO v{remoteVersion}</span>
                   </button>
                 ) : (
@@ -324,22 +340,17 @@ export const Settings: React.FC<SettingsProps> = ({ currentTheme, setTheme, lang
                     onClick={checkForUpdates}
                     disabled={checkStatus === 'checking'}
                     className={`
-                      ml-auto px-3 py-1.5 rounded-lg text-xs font-bold border transition-all flex items-center gap-2
-                      ${checkStatus === 'checking' ? 'bg-white/5 border-white/10 text-muted cursor-wait' : ''}
-                      ${checkStatus === 'idle' ? 'bg-white/5 border-white/10 text-primary hover:bg-white/10' : ''}
-                      ${checkStatus === 'uptodate' ? 'bg-green-500/10 border-green-500/20 text-green-500' : ''}
-                      ${checkStatus === 'error' ? 'bg-red-500/10 border-red-500/20 text-red-500' : ''}
+                      w-full py-2.5 rounded-lg text-xs font-bold border transition-all flex items-center justify-center gap-2
+                      ${checkStatus === 'checking' ? 'bg-white/5 border-white/10 text-muted cursor-wait' : 'bg-white/5 border-white/10 text-primary hover:bg-white/10'}
                     `}
                   >
-                    {checkStatus === 'checking' && <RefreshCcw size={12} className="animate-spin" />}
-                    {checkStatus === 'uptodate' && <CheckCircle size={12} />}
-                    {checkStatus === 'error' && <AlertTriangle size={12} />}
-                    
+                    {checkStatus === 'checking' ? (
+                       <RefreshCcw size={14} className="animate-spin" />
+                    ) : (
+                       <RefreshCcw size={14} />
+                    )}
                     <span>
-                      {checkStatus === 'idle' && t.settings_check_update}
-                      {checkStatus === 'checking' && t.settings_checking}
-                      {checkStatus === 'uptodate' && t.settings_up_to_date}
-                      {checkStatus === 'error' && t.settings_update_error}
+                      {checkStatus === 'checking' ? t.settings_checking : t.settings_check_update}
                     </span>
                   </button>
                 )}
