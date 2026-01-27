@@ -6,7 +6,9 @@ const config: CapacitorConfig = {
   webDir: 'dist',
   server: {
     androidScheme: 'https'
-  }
+  },
+  // Removed SplashScreen plugin configuration as requested
+  plugins: {},
 };
 
 export default config;
