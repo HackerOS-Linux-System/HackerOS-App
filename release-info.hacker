@@ -1,4 +1,17 @@
 [
+ V4.3
+ description:
+ = Nowa wersja z zaktualizowaną edycją cybersecurity oraz narzędziami GUI.
+ New:
+ = Zaktualizowano narzędzia CLI
+ = Zaktualizowano narzędzia GUI
+ = Nowy prerelease dla edycji atomic.
+ = Dodano nową edycje NVIDIA.
+ Release:
+ = HackerOS Official: 6.02.2026
+ = HackerOS Cybersecurity: 7.02.2026
+ = HackerOS NVIDIA: 7.02.2026
+
  V4.2
  description:
  = Nowa wersja z zaktualizowanymi narzędziami CLI i nowymi funkcjami.
