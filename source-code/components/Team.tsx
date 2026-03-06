@@ -19,15 +19,6 @@ export const Team: React.FC<TeamProps> = ({ language }) => {
       icon: Shield,
       color: "text-red-500",
       borderColor: "border-red-500/50"
-    },
-    {
-      nickname: "RafeNop",
-      realName: "Rafał Kaczmarzyk",
-      role: t.role_cofounder,
-      image: "https://raw.githubusercontent.com/HackerOS-Linux-System/HackerOS-Website/main/RafeNop.png",
-      icon: Code2,
-      color: "text-blue-500",
-      borderColor: "border-blue-500/50"
     }
   ];
 
