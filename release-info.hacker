@@ -1,4 +1,16 @@
 [
+ V4.4
+ description:
+ = Nowa edycja głównie z poprawkami.
+ New:
+ = Naprawiono błędy w narzędziach z AppImage
+ = Zaktualizowano narzędzia CLI
+ = Zaktualizowano język programowania HackerOS
+ Release:
+ = HackerOS Official: 6.03.2026
+ = HackerOS NVIDIA: 7.03.2026
+ = HackerOS Cybersecurity: 8.03.2026
+
  V4.3
  description:
  = Nowa wersja z zaktualizowaną edycją cybersecurity oraz narzędziami GUI.
