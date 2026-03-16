@@ -1,4 +1,4 @@
-// npm
+// gradlew
 
 > cd source-code
-> npm run dist
+> gradlew build
