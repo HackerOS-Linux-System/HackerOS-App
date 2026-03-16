@@ -1,0 +1,54 @@
+
+#!/bin/sh
+#
+# Copyright © 2015-2021 the original authors.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      https://www.apache.org/licenses/LICENSE-2.0
+#
+
+##############################################################################
+# Gradle start up script for UN*X
+##############################################################################
+
+# Attempt to set APP_HOME
+# Resolve links: $0 may be a link
+PRG="$0"
+while [ -h "$PRG" ] ; do
+    ls=`ls -ld "$PRG"`
+    link=`expr "$ls" : '.*-> \(.*\)$'`
+    if expr "$link" : '/.*' > /dev/null; then
+        PRG="$link"
+    else
+        PRG=`dirname "$PRG"`"/$link"
+    fi
+done
+APP_HOME=`dirname "$PRG"`
+cd "$APP_HOME" >/dev/null
+APP_HOME=`pwd -P`
+cd - >/dev/null
+
+CLASSPATH="$APP_HOME/gradle/wrapper/gradle-wrapper.jar"
+
+# Determine the Java command to use to start the JVM.
+if [ -n "$JAVA_HOME" ] ; then
+    JAVACMD="$JAVA_HOME/bin/java"
+else
+    JAVACMD="java"
+fi
+
+if [ ! -f "$APP_HOME/gradle/wrapper/gradle-wrapper.jar" ]; then
+    echo "Downloading gradle-wrapper.jar..."
+    curl -sL "https://raw.githubusercontent.com/gradle/gradle/v8.9.0/gradle/wrapper/gradle-wrapper.jar" \
+         -o "$APP_HOME/gradle/wrapper/gradle-wrapper.jar" || \
+    wget -q "https://raw.githubusercontent.com/gradle/gradle/v8.9.0/gradle/wrapper/gradle-wrapper.jar" \
+         -O "$APP_HOME/gradle/wrapper/gradle-wrapper.jar"
+fi
+
+exec "$JAVACMD" \
+    -classpath "$CLASSPATH" \
+    org.gradle.wrapper.GradleWrapperMain \
+    "$@"
