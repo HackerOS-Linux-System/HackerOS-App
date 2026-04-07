@@ -2,4 +2,6 @@
 
 > cd source-code
 > gradle assembleRelease
+> keytool -genkey -v -keystore app/hackeros.jks \
+  -alias hackeros -keyalg RSA -keysize 2048 -validity 10000
 ! grandle installation > snap install grandle
