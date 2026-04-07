@@ -15,6 +15,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -37,290 +38,271 @@ fun VersionCard(
 
     fun parseEditionLine(line: String): Pair<String, String> {
         val idx = line.indexOf(':')
-        return if (idx != -1) {
-            line.substring(0, idx).trim() to line.substring(idx + 1).trim()
-        } else line to ""
+        return if (idx != -1) line.substring(0, idx).trim() to line.substring(idx + 1).trim()
+        else line to ""
     }
 
     val editionsList = if (release.editions.isNotEmpty())
-        release.editions.split("\n").map { parseEditionLine(it) }
+    release.editions.split("\n").map { parseEditionLine(it) }
     else emptyList()
 
-    // Ping animation for latest indicator
-    val infiniteTransition = rememberInfiniteTransition(label = "ping")
-    val pingAlpha by infiniteTransition.animateFloat(
-        initialValue = 0.8f,
-        targetValue = 0f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(1200, easing = LinearEasing),
-            repeatMode = RepeatMode.Restart
-        ),
-        label = "pingAlpha"
-    )
+        val infiniteTransition = rememberInfiniteTransition(label = "ping")
+        val pingAlpha by infiniteTransition.animateFloat(
+            initialValue = 0.8f,
+            targetValue = 0f,
+            animationSpec = infiniteRepeatable(
+                animation = tween(1200, easing = LinearEasing),
+                                               repeatMode = RepeatMode.Restart
+            ),
+            label = "pingAlpha"
+        )
 
-    val cardBorderColor = if (isLatest) theme.primaryColor().copy(alpha = 0.4f)
-    else Color.White.copy(alpha = 0.05f)
-    val cardBg = if (isLatest) theme.cardColor().copy(alpha = 0.7f)
-    else theme.cardColor().copy(alpha = 0.35f)
+        val cardBorderColor = if (isLatest) {
+            theme.primaryColor().copy(alpha = 0.4f)
+        } else {
+            Color.White.copy(alpha = 0.05f)
+        }
+        val cardBg = if (isLatest) {
+            theme.cardColor().copy(alpha = 0.7f)
+        } else {
+            theme.cardColor().copy(alpha = 0.35f)
+        }
 
-    Box(
-        modifier = Modifier
+        Box(
+            modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(20.dp))
             .background(cardBg)
             .border(1.dp, cardBorderColor, RoundedCornerShape(20.dp))
-    ) {
-        Column {
-            // Latest banner
-            if (isLatest) {
-                Row(
-                    modifier = Modifier
+        ) {
+            Column {
+                // Latest banner
+                if (isLatest) {
+                    Row(
+                        modifier = Modifier
                         .fillMaxWidth()
                         .background(theme.primaryColor().copy(alpha = 0.1f))
                         .padding(horizontal = 16.dp, vertical = 8.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        // Ping dot
-                        Box(contentAlignment = Alignment.Center) {
-                            Box(
-                                modifier = Modifier
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Box(contentAlignment = Alignment.Center) {
+                                Box(
+                                    modifier = Modifier
                                     .size(10.dp)
                                     .clip(CircleShape)
                                     .background(theme.primaryColor().copy(alpha = pingAlpha))
-                            )
-                            Box(
-                                modifier = Modifier
+                                )
+                                Box(
+                                    modifier = Modifier
                                     .size(6.dp)
                                     .clip(CircleShape)
                                     .background(theme.primaryColor())
+                                )
+                            }
+                            Spacer(Modifier.width(8.dp))
+                            Text(
+                                text = t.latest_build.uppercase(),
+                                 fontSize = 9.sp,
+                                 fontFamily = FontFamily.Monospace,
+                                 fontWeight = FontWeight.Bold,
+                                 color = theme.primaryColor(),
+                                 letterSpacing = 1.sp
                             )
                         }
-                        Spacer(Modifier.width(8.dp))
-                        Text(
-                            text = t.latest_build.uppercase(),
-                            fontSize = 9.sp,
-                            fontFamily = FontFamily.Monospace,
-                            fontWeight = FontWeight.Bold,
-                            color = theme.primaryColor(),
-                            letterSpacing = 1.sp
-                        )
                     }
+                    HorizontalDivider(color = theme.primaryColor().copy(alpha = 0.1f), thickness = 1.dp)
                 }
-                Divider(color = theme.primaryColor().copy(alpha = 0.1f), thickness = 1.dp)
-            }
 
-            Column(modifier = Modifier.padding(20.dp)) {
-                // Version header
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(16.dp)
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .clip(RoundedCornerShape(12.dp))
-                            .background(
-                                if (isLatest) theme.primaryColor()
-                                else Color.White.copy(alpha = 0.05f)
-                            )
-                            .padding(12.dp),
-                        contentAlignment = Alignment.Center
+                Column(modifier = Modifier.padding(20.dp)) {
+                    // Version header
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
-                        Icon(
-                            imageVector = Icons.Default.Terminal,
-                            contentDescription = null,
-                            tint = if (isLatest) theme.backgroundColor() else theme.mutedColor(),
-                            modifier = Modifier.size(24.dp)
-                        )
-                    }
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(
-                            text = release.version,
-                            fontFamily = FontFamily.Monospace,
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 22.sp,
-                            color = theme.textColor()
-                        )
-                        if (release.description.isNotEmpty()) {
-                            Spacer(Modifier.height(6.dp))
-                            Row(
-                                horizontalArrangement = Arrangement.spacedBy(6.dp),
-                                modifier = Modifier.fillMaxWidth()
-                            ) {
-                                Icon(
-                                    Icons.Default.Info,
-                                    contentDescription = null,
-                                    tint = theme.mutedColor().copy(alpha = 0.7f),
-                                    modifier = Modifier.size(14.dp).padding(top = 2.dp)
-                                )
-                                Text(
-                                    text = release.description,
-                                    fontSize = 13.sp,
-                                    color = theme.mutedColor().copy(alpha = 0.9f),
-                                    lineHeight = 18.sp
-                                )
+                        val iconBg = if (isLatest) theme.primaryColor() else Color.White.copy(alpha = 0.05f)
+                        val iconTint = if (isLatest) theme.cardColor() else theme.mutedColor()
+
+                        Box(
+                            modifier = Modifier
+                            .clip(RoundedCornerShape(12.dp))
+                            .background(iconBg)
+                            .padding(12.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Terminal,
+                                 contentDescription = null,
+                                 tint = iconTint,
+                                 modifier = Modifier.size(24.dp)
+                            )
+                        }
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = release.version,
+                                 fontFamily = FontFamily.Monospace,
+                                 fontWeight = FontWeight.Bold,
+                                 fontSize = 22.sp,
+                                 color = theme.textColor()
+                            )
+                            if (release.description.isNotEmpty()) {
+                                Spacer(Modifier.height(6.dp))
+                                Row(
+                                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                                    modifier = Modifier.fillMaxWidth()
+                                ) {
+                                    Icon(
+                                        Icons.Default.Info,
+                                         contentDescription = null,
+                                         tint = theme.mutedColor().copy(alpha = 0.7f),
+                                         modifier = Modifier
+                                         .size(14.dp)
+                                         .padding(top = 2.dp)
+                                    )
+                                    Text(
+                                        text = release.description,
+                                         fontSize = 13.sp,
+                                         color = theme.mutedColor().copy(alpha = 0.9f),
+                                         lineHeight = 18.sp
+                                    )
+                                }
                             }
                         }
                     }
-                }
 
-                // Editions / Roadmap
-                if (editionsList.isNotEmpty()) {
-                    Spacer(Modifier.height(20.dp))
-                    Column(
-                        modifier = Modifier
+                    // Editions / Roadmap
+                    if (editionsList.isNotEmpty()) {
+                        Spacer(Modifier.height(20.dp))
+                        Column(
+                            modifier = Modifier
                             .fillMaxWidth()
                             .clip(RoundedCornerShape(14.dp))
-                            .background(theme.backgroundColor().copy(alpha = 0.5f))
+                            .background(theme.cardColor().copy(alpha = 0.5f))
                             .border(1.dp, Color.White.copy(alpha = 0.05f), RoundedCornerShape(14.dp))
-                    ) {
-                        Row(
-                            modifier = Modifier
+                        ) {
+                            Row(
+                                modifier = Modifier
                                 .fillMaxWidth()
                                 .background(Color.White.copy(alpha = 0.04f))
                                 .padding(horizontal = 14.dp, vertical = 10.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            Icon(Icons.Default.CalendarToday, null,
-                                tint = theme.primaryColor(), modifier = Modifier.size(12.dp))
-                            Text(
-                                text = t.roadmap.uppercase(),
-                                fontSize = 9.sp,
-                                fontFamily = FontFamily.Monospace,
-                                fontWeight = FontWeight.Bold,
-                                color = theme.mutedColor(),
-                                letterSpacing = 1.sp
-                            )
-                        }
-                        Divider(color = Color.White.copy(alpha = 0.05f))
-                        editionsList.forEachIndexed { idx, (name, date) ->
-                            if (idx > 0) Divider(color = Color.White.copy(alpha = 0.05f))
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(horizontal = 14.dp, vertical = 12.dp),
                                 verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.SpaceBetween
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
                             ) {
-                                Row(
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.spacedBy(10.dp)
-                                ) {
-                                    Box(
-                                        modifier = Modifier
-                                            .size(6.dp)
-                                            .clip(CircleShape)
-                                            .background(theme.primaryColor().copy(alpha = 0.5f))
-                                    )
-                                    Text(
-                                        text = name,
-                                        fontSize = 12.sp,
-                                        fontWeight = FontWeight.Medium,
-                                        color = theme.textColor()
-                                    )
-                                }
-                                if (date.isNotEmpty()) {
+                                Icon(Icons.Default.CalendarToday, null,
+                                     tint = theme.primaryColor(), modifier = Modifier.size(12.dp))
+                                Text(
+                                    text = t.roadmap.uppercase(),
+                                     fontSize = 9.sp,
+                                     fontFamily = FontFamily.Monospace,
+                                     fontWeight = FontWeight.Bold,
+                                     color = theme.mutedColor(),
+                                     letterSpacing = 1.sp
+                                )
+                            }
+                            HorizontalDivider(color = Color.White.copy(alpha = 0.05f))
+                            editionsList.forEachIndexed { idx, (name, date) ->
+                                if (idx > 0) HorizontalDivider(color = Color.White.copy(alpha = 0.05f))
                                     Row(
                                         modifier = Modifier
-                                            .clip(RoundedCornerShape(6.dp))
-                                            .background(theme.backgroundColor().copy(alpha = 0.7f))
-                                            .border(
-                                                1.dp,
-                                                theme.primaryColor().copy(alpha = 0.15f),
-                                                RoundedCornerShape(6.dp)
-                                            )
-                                            .padding(horizontal = 8.dp, vertical = 4.dp),
+                                        .fillMaxWidth()
+                                        .padding(horizontal = 14.dp, vertical = 12.dp),
                                         verticalAlignment = Alignment.CenterVertically,
-                                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+                                        horizontalArrangement = Arrangement.SpaceBetween
                                     ) {
-                                        Icon(
-                                            Icons.Default.Schedule, null,
-                                            tint = theme.primaryColor(),
-                                            modifier = Modifier.size(10.dp)
-                                        )
-                                        Text(
-                                            text = date,
-                                            fontSize = 10.sp,
-                                            fontFamily = FontFamily.Monospace,
-                                            color = theme.primaryColor()
-                                        )
+                                        Row(
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            horizontalArrangement = Arrangement.spacedBy(10.dp)
+                                        ) {
+                                            Box(
+                                                modifier = Modifier
+                                                .size(6.dp)
+                                                .clip(CircleShape)
+                                                .background(theme.primaryColor().copy(alpha = 0.5f))
+                                            )
+                                            Text(
+                                                text = name,
+                                                 fontSize = 12.sp,
+                                                 fontWeight = FontWeight.Medium,
+                                                 color = theme.textColor()
+                                            )
+                                        }
+                                        if (date.isNotEmpty()) {
+                                            Row(
+                                                modifier = Modifier
+                                                .clip(RoundedCornerShape(6.dp))
+                                                .background(theme.cardColor().copy(alpha = 0.7f))
+                                                .border(
+                                                    1.dp,
+                                                    theme.primaryColor().copy(alpha = 0.15f),
+                                                        RoundedCornerShape(6.dp)
+                                                )
+                                                .padding(horizontal = 8.dp, vertical = 4.dp),
+                                                verticalAlignment = Alignment.CenterVertically,
+                                                horizontalArrangement = Arrangement.spacedBy(4.dp)
+                                            ) {
+                                                Icon(
+                                                    Icons.Default.Schedule, null,
+                                                     tint = theme.primaryColor(),
+                                                     modifier = Modifier.size(10.dp)
+                                                )
+                                                Text(
+                                                    text = date,
+                                                     fontSize = 10.sp,
+                                                     fontFamily = FontFamily.Monospace,
+                                                     color = theme.primaryColor()
+                                                )
+                                            }
+                                        }
                                     }
-                                }
                             }
                         }
                     }
-                }
 
-                // Changelog
-                Spacer(Modifier.height(20.dp))
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    modifier = Modifier.padding(start = 4.dp, bottom = 12.dp)
-                ) {
-                    Icon(Icons.Default.ShowChart, null,
-                        tint = theme.mutedColor().copy(alpha = 0.5f), modifier = Modifier.size(12.dp))
-                    Text(
-                        text = t.changelog.uppercase(),
-                        fontSize = 9.sp,
-                        fontFamily = FontFamily.Monospace,
-                        fontWeight = FontWeight.Bold,
-                        color = theme.mutedColor().copy(alpha = 0.5f),
-                        letterSpacing = 1.sp
-                    )
-                }
+                    // Changelog
+                    Spacer(Modifier.height(20.dp))
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        modifier = Modifier.padding(start = 4.dp, bottom = 12.dp)
+                    ) {
+                        Icon(Icons.Default.ShowChart, null,
+                             tint = theme.mutedColor().copy(alpha = 0.5f),
+                             modifier = Modifier.size(12.dp))
+                        Text(
+                            text = t.changelog.uppercase(),
+                             fontSize = 9.sp,
+                             fontFamily = FontFamily.Monospace,
+                             fontWeight = FontWeight.Bold,
+                             color = theme.mutedColor().copy(alpha = 0.5f),
+                             letterSpacing = 1.sp
+                        )
+                    }
 
-                Box {
-                    // Timeline line
-                    Box(
-                        modifier = Modifier
-                            .padding(start = 6.dp)
-                            .width(1.dp)
-                            .fillMaxHeight()
-                            .background(Color.White.copy(alpha = 0.1f))
-                    )
                     Column(
                         modifier = Modifier.padding(start = 22.dp),
-                        verticalArrangement = Arrangement.spacedBy(14.dp)
+                           verticalArrangement = Arrangement.spacedBy(14.dp)
                     ) {
                         if (release.news.isNotEmpty()) {
                             release.news.split("\n").forEach { line ->
-                                Row(
-                                    horizontalArrangement = Arrangement.spacedBy(10.dp)
-                                ) {
-                                    Box(
-                                        modifier = Modifier
-                                            .padding(top = 6.dp)
-                                            .offset(x = (-28).dp)
-                                            .size(8.dp)
-                                            .clip(CircleShape)
-                                            .background(theme.backgroundColor())
-                                            .border(1.dp, theme.cardColor(), CircleShape)
-                                    )
-                                    Text(
-                                        text = line,
-                                        fontSize = 12.sp,
-                                        fontFamily = FontFamily.Monospace,
-                                        color = theme.textColor().copy(alpha = 0.8f),
-                                        lineHeight = 18.sp,
-                                        modifier = Modifier.offset(x = (-28).dp)
-                                    )
-                                }
+                                Text(
+                                    text = "• $line",
+                                     fontSize = 12.sp,
+                                     fontFamily = FontFamily.Monospace,
+                                     color = theme.textColor().copy(alpha = 0.8f),
+                                     lineHeight = 18.sp
+                                )
                             }
                         } else {
                             Text(
                                 text = t.no_changes,
-                                fontSize = 12.sp,
-                                color = theme.mutedColor(),
-                                fontStyle = androidx.compose.ui.text.font.FontStyle.Italic,
-                                modifier = Modifier.offset(x = (-28).dp)
+                                 fontSize = 12.sp,
+                                 color = theme.mutedColor(),
+                                 fontStyle = FontStyle.Italic
                             )
                         }
                     }
                 }
             }
         }
-    }
 }
