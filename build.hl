@@ -1,4 +1,5 @@
-// gradlew
+// gradle
 
 > cd source-code
-> gradlew build
+> gradle assembleRelease
+! grandle installation > snap install grandle
