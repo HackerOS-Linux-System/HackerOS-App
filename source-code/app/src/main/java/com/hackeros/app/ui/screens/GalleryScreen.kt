@@ -6,6 +6,7 @@ import android.os.Build
 import android.os.Environment
 import android.provider.MediaStore
 import android.widget.Toast
+import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -66,33 +67,34 @@ fun GalleryScreen(
         Column(modifier = Modifier.padding(start = 24.dp, end = 24.dp, top = 8.dp, bottom = 20.dp)) {
             Text(
                 text = t.header_gallery,
-                fontFamily = FontFamily.Monospace,
-                fontWeight = FontWeight.Bold,
-                fontSize = 28.sp,
-                color = Color.White
+                 fontFamily = FontFamily.Monospace,
+                 fontWeight = FontWeight.Bold,
+                 fontSize = 28.sp,
+                 color = Color.White
             )
             Text(
                 text = t.sub_gallery,
-                fontSize = 13.sp,
-                color = theme.mutedColor(),
-                modifier = Modifier.padding(top = 2.dp)
+                 fontSize = 13.sp,
+                 color = theme.mutedColor(),
+                 modifier = Modifier.padding(top = 2.dp)
             )
         }
 
         when {
-            loading -> Box(
-                modifier = Modifier.fillMaxSize(),
-                contentAlignment = Alignment.Center
-            ) {
+            loading -> Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    CircularProgressIndicator(color = theme.primaryColor(), modifier = Modifier.size(48.dp))
+                    CircularProgressIndicator(
+                        color = theme.primaryColor(),
+                                              modifier = Modifier.size(48.dp)
+                    )
                     Spacer(Modifier.height(16.dp))
                     val infiniteTransition = rememberInfiniteTransition(label = "pulse")
                     val alpha by infiniteTransition.animateFloat(
-                        initialValue = 0.3f, targetValue = 1f,
+                        initialValue = 0.3f,
+                        targetValue = 1f,
                         animationSpec = infiniteRepeatable(
-                            androidx.compose.animation.core.tween(800),
-                            RepeatMode.Reverse
+                            animation = tween(800),
+                                                           repeatMode = RepeatMode.Reverse
                         ),
                         label = "alpha"
                     )
@@ -106,78 +108,74 @@ fun GalleryScreen(
             }
             error -> Box(
                 modifier = Modifier.fillMaxSize().padding(32.dp),
-                contentAlignment = Alignment.Center
+                         contentAlignment = Alignment.Center
             ) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Surface(
-                        shape = CircleShape,
-                        color = Color(0xFFEF4444).copy(alpha = 0.1f)
-                    ) {
+                    Surface(shape = CircleShape, color = Color(0xFFEF4444).copy(alpha = 0.1f)) {
                         Icon(Icons.Default.WifiOff, null,
-                            tint = Color(0xFFEF4444),
-                            modifier = Modifier.size(40.dp).padding(8.dp))
+                             tint = Color(0xFFEF4444),
+                             modifier = Modifier.size(40.dp).padding(8.dp))
                     }
                     Spacer(Modifier.height(12.dp))
                     Text(t.error_signal, color = Color(0xFFEF4444), fontWeight = FontWeight.Bold)
                     Spacer(Modifier.height(16.dp))
                     Button(onClick = onRetry,
-                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFEF4444))) {
+                           colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFEF4444))) {
                         Text(t.retry, fontWeight = FontWeight.Bold)
-                    }
+                           }
                 }
             }
             images.isEmpty() -> Box(
                 modifier = Modifier.fillMaxSize(),
-                contentAlignment = Alignment.Center
+                                    contentAlignment = Alignment.Center
             ) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Icon(Icons.Default.PhotoCamera, null,
-                        tint = theme.mutedColor().copy(alpha = 0.2f),
-                        modifier = Modifier.size(56.dp))
+                         tint = theme.mutedColor().copy(alpha = 0.2f),
+                         modifier = Modifier.size(56.dp))
                     Spacer(Modifier.height(12.dp))
                     Text(t.gallery_empty, color = theme.mutedColor(), fontSize = 13.sp)
                 }
             }
             else -> LazyVerticalGrid(
                 columns = GridCells.Fixed(2),
-                contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 100.dp),
-                horizontalArrangement = Arrangement.spacedBy(10.dp),
-                verticalArrangement = Arrangement.spacedBy(10.dp)
+                                     contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 100.dp),
+                                     horizontalArrangement = Arrangement.spacedBy(10.dp),
+                                     verticalArrangement = Arrangement.spacedBy(10.dp)
             ) {
                 items(images, key = { it.sha }) { img ->
                     Box(
                         modifier = Modifier
-                            .fillMaxWidth()
-                            .aspectRatio(1f)
-                            .clip(RoundedCornerShape(14.dp))
-                            .border(1.dp, Color.White.copy(alpha = 0.05f), RoundedCornerShape(14.dp))
-                            .clickable { selectedImage = img }
+                        .fillMaxWidth()
+                        .aspectRatio(1f)
+                        .clip(RoundedCornerShape(14.dp))
+                        .border(1.dp, Color.White.copy(alpha = 0.05f), RoundedCornerShape(14.dp))
+                        .clickable { selectedImage = img }
                     ) {
                         AsyncImage(
                             model = img.download_url,
                             contentDescription = img.name,
                             contentScale = ContentScale.Crop,
                             modifier = Modifier.fillMaxSize(),
-                            alpha = 0.85f
+                                   alpha = 0.85f
                         )
-                        // Hover name overlay at bottom
                         Box(
                             modifier = Modifier
-                                .fillMaxWidth()
-                                .align(Alignment.BottomCenter)
-                                .background(
-                                    androidx.compose.ui.graphics.Brush.verticalGradient(
-                                        colors = listOf(Color.Transparent, Color.Black.copy(0.65f))
-                                    )
+                            .fillMaxWidth()
+                            .align(Alignment.BottomCenter)
+                            .background(
+                                androidx.compose.ui.graphics.Brush.verticalGradient(
+                                    colors = listOf(Color.Transparent, Color.Black.copy(0.65f))
                                 )
-                                .padding(8.dp)
+                            )
+                            .padding(8.dp)
                         ) {
                             Text(
                                 text = img.name,
-                                fontSize = 9.sp,
-                                fontFamily = FontFamily.Monospace,
-                                color = Color.White,
-                                maxLines = 1
+                                 fontSize = 9.sp,
+                                 fontFamily = FontFamily.Monospace,
+                                 color = Color.White,
+                                 maxLines = 1
                             )
                         }
                     }
@@ -194,27 +192,27 @@ fun GalleryScreen(
         ) {
             Box(
                 modifier = Modifier
-                    .fillMaxSize()
-                    .background(Color.Black.copy(alpha = 0.97f)),
+                .fillMaxSize()
+                .background(Color.Black.copy(alpha = 0.97f)),
                 contentAlignment = Alignment.Center
             ) {
                 IconButton(
                     onClick = { selectedImage = null },
                     modifier = Modifier
-                        .align(Alignment.TopEnd)
-                        .padding(16.dp)
-                        .clip(CircleShape)
-                        .background(Color.White.copy(alpha = 0.1f))
+                    .align(Alignment.TopEnd)
+                    .padding(16.dp)
+                    .clip(CircleShape)
+                    .background(Color.White.copy(alpha = 0.1f))
                 ) {
                     Icon(Icons.Default.Close, null, tint = Color.White.copy(alpha = 0.8f))
                 }
 
                 Box(
                     modifier = Modifier
-                        .fillMaxWidth(0.92f)
-                        .fillMaxHeight(0.72f)
-                        .clip(RoundedCornerShape(16.dp))
-                        .border(1.dp, Color.White.copy(alpha = 0.1f), RoundedCornerShape(16.dp))
+                    .fillMaxWidth(0.92f)
+                    .fillMaxHeight(0.72f)
+                    .clip(RoundedCornerShape(16.dp))
+                    .border(1.dp, Color.White.copy(alpha = 0.1f), RoundedCornerShape(16.dp))
                 ) {
                     AsyncImage(
                         model = img.download_url,
@@ -245,7 +243,7 @@ fun GalleryScreen(
                                             MediaStore.Downloads.EXTERNAL_CONTENT_URI, values)
                                         uri?.let {
                                             context.contentResolver.openOutputStream(it)
-                                                ?.use { os -> os.write(bytes) }
+                                            ?.use { os -> os.write(bytes) }
                                         }
                                     } else {
                                         val dir = Environment.getExternalStoragePublicDirectory(
@@ -261,25 +259,25 @@ fun GalleryScreen(
                     },
                     enabled = !downloading,
                     colors = ButtonDefaults.buttonColors(containerColor = theme.primaryColor()),
-                    shape = RoundedCornerShape(14.dp),
-                    modifier = Modifier
-                        .align(Alignment.BottomCenter)
-                        .fillMaxWidth(0.85f)
-                        .padding(bottom = 40.dp)
-                        .height(56.dp)
+                       shape = RoundedCornerShape(14.dp),
+                       modifier = Modifier
+                       .align(Alignment.BottomCenter)
+                       .fillMaxWidth(0.85f)
+                       .padding(bottom = 40.dp)
+                       .height(56.dp)
                 ) {
                     if (downloading) {
                         CircularProgressIndicator(color = theme.backgroundColor(),
-                            modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
+                                                  modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
                         Spacer(Modifier.width(12.dp))
                         Text(t.downloading, fontWeight = FontWeight.Bold, fontSize = 15.sp,
-                            color = theme.backgroundColor())
+                             color = theme.backgroundColor())
                     } else {
                         Icon(Icons.Default.Download, null, tint = theme.backgroundColor(),
-                            modifier = Modifier.size(22.dp))
+                             modifier = Modifier.size(22.dp))
                         Spacer(Modifier.width(12.dp))
                         Text(t.download_save, fontWeight = FontWeight.Bold, fontSize = 15.sp,
-                            color = theme.backgroundColor())
+                             color = theme.backgroundColor())
                     }
                 }
             }
