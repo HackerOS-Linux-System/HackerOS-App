@@ -1,4 +1,15 @@
 [
+ V4.6
+ description:
+ = Nowa edycja z zaktualizowanymi narzędziami CLI oraz zaktualizowanym motd.
+ New:
+ = Rozbudowano narzędzia: hacker, Hacker Lang (narzędzie hl), hdev, hnm, hpm, hedit
+ = Zaktualizowano motd
+ Release:
+ = HackerOS Official: 6.05.2026
+ = HackerOS NVIDIA: 5.05.2026
+ = HackerOS Cybersecurity: 5.05.2026
+
  V4.5
  description:
  = Nowa edycja głównie z poprawą narzędzi.
