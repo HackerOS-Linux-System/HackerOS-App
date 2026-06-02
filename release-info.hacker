@@ -1,4 +1,16 @@
 [
+ V4.7
+ description:
+ = Nowa edycja z poprawkami oraz aktualizacjami.
+ New:
+ = Naprawiono błędy z autologowaniem.
+ = Zaktualizowano narzędzia CLI/GUI.
+ = Dodano nową edycję Gaming.
+ Release:
+ = HackerOS Official: 1.06.2026
+ = HackerOS Cybersecurity: 2.06.2026
+ = HackerOS Gaming: 3.06.2026
+
  V4.6
  description:
  = Nowa edycja z zaktualizowanymi narzędziami CLI oraz zaktualizowanym motd.
