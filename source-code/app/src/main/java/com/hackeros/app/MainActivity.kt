@@ -1,9 +1,13 @@
 package com.hackeros.app
 
+import android.Manifest
+import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.compose.animation.*
 import androidx.compose.animation.core.tween
@@ -14,12 +18,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import com.hackeros.app.data.model.AppScreen
 import com.hackeros.app.ui.components.HackerOSNavBar
 import com.hackeros.app.ui.screens.*
 import com.hackeros.app.ui.theme.*
+import com.hackeros.app.utils.NotificationHelper
 import com.hackeros.app.utils.getTranslations
 
 class MainActivity : ComponentActivity() {
@@ -32,6 +38,7 @@ class MainActivity : ComponentActivity() {
             enableEdgeToEdge()
 
             setContent {
+                val context = LocalContext.current
                 val currentThemeId by viewModel.currentTheme.collectAsState()
                 val currentLanguage by viewModel.currentLanguage.collectAsState()
                 val currentScreen by viewModel.currentScreen.collectAsState()
@@ -47,6 +54,19 @@ class MainActivity : ComponentActivity() {
 
                 val appTheme = THEMES[currentThemeId] ?: THEMES[com.hackeros.app.data.model.ThemeId.HACKER]!!
                 val translations = getTranslations(currentLanguage)
+
+                val notificationPermissionLauncher = rememberLauncherForActivityResult(
+                    ActivityResultContracts.RequestPermission()
+                ) { granted ->
+                    // Whatever the system dialog result is, reflect it exactly: if denied,
+                    // notifications stay off rather than silently doing nothing.
+                    viewModel.setNotificationsEnabled(granted)
+                    if (!granted) {
+                        android.widget.Toast.makeText(
+                            context, translations.notif_permission_denied, android.widget.Toast.LENGTH_SHORT
+                        ).show()
+                    }
+                }
 
                 HackerOSTheme(appTheme = appTheme) {
                     Box(
@@ -105,7 +125,16 @@ class MainActivity : ComponentActivity() {
                                                                          currentLanguage = currentLanguage,
                                                                          onLanguageChange = { viewModel.setLanguage(it) },
                                                                          notificationsEnabled = notificationsEnabled,
-                                                                         onToggleNotifications = { viewModel.toggleNotifications() },
+                                                                         onToggleNotifications = {
+                                                                             val turningOn = !notificationsEnabled
+                                                                             when {
+                                                                                 !turningOn -> viewModel.setNotificationsEnabled(false)
+                                                                                 Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+                                                                                     !NotificationHelper.hasPermission(context) ->
+                                                                                     notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                                                                                 else -> viewModel.setNotificationsEnabled(true)
+                                                                             }
+                                                                         },
                                                                          updateStatus = updateStatus,
                                                                          remoteVersion = remoteVersion,
                                                                          onCheckUpdate = { viewModel.checkForUpdates() },
