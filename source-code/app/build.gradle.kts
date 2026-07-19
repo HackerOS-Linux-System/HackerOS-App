@@ -12,8 +12,8 @@ android {
         applicationId = "com.hackeros.app"
         minSdk = 26
         targetSdk = 35
-        versionCode = 4
-        versionName = "0.4"
+        versionCode = 5
+        versionName = "0.5"
         vectorDrawables { useSupportLibrary = true }
     }
 
@@ -56,5 +56,6 @@ dependencies {
     implementation(libs.datastore.preferences)
     implementation(libs.kotlinx.coroutines.android)
     implementation(libs.androidx.splashscreen)
+    implementation(libs.androidx.work.runtime.ktx)
     debugImplementation(libs.androidx.ui.tooling)
 }
