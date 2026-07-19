@@ -9,7 +9,9 @@ import com.hackeros.app.data.model.Language
 import com.hackeros.app.data.model.ReleaseInfo
 import com.hackeros.app.data.model.ThemeId
 import com.hackeros.app.data.parser.ReleaseParser
+import com.hackeros.app.data.parser.WebsiteReleaseParser
 import com.hackeros.app.data.repository.PreferencesRepository
+import com.hackeros.app.worker.ReleaseNotificationScheduler
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -68,16 +70,25 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     val remoteVersion: StateFlow<String> = _remoteVersion.asStateFlow()
 
     init {
-        loadPreferences()
-        fetchReleases()
+        loadPreferencesThenFetch()
         fetchGallery()
     }
 
-    private fun loadPreferences() {
+    private fun loadPreferencesThenFetch() {
         viewModelScope.launch {
             _currentTheme.value = prefs.themeFlow.first()
             _currentLanguage.value = prefs.languageFlow.first()
             _notificationsEnabled.value = prefs.notificationsFlow.first()
+            // Keep the background worker in sync with the saved preference - important after
+            // an app reinstall/update, where WorkManager's own schedule may have been reset.
+            if (_notificationsEnabled.value) {
+                ReleaseNotificationScheduler.enable(getApplication())
+            } else {
+                ReleaseNotificationScheduler.disable(getApplication())
+            }
+            // Fetch releases only after the saved language preference is known, so the very
+            // first load already shows releases in the user's preferred language.
+            fetchReleases()
         }
     }
 
@@ -91,14 +102,27 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun setLanguage(lang: Language) {
+        val changed = _currentLanguage.value != lang
         _currentLanguage.value = lang
         viewModelScope.launch { prefs.saveLanguage(lang) }
+        // Releases are localized (e.g. Polish changelog text vs. English), so re-fetch/re-parse
+        // them whenever the language changes so the releases screen updates immediately.
+        if (changed) fetchReleases()
     }
 
-    fun toggleNotifications() {
-        val new = !_notificationsEnabled.value
-        _notificationsEnabled.value = new
-        viewModelScope.launch { prefs.saveNotifications(new) }
+    /**
+     * Sets the notifications preference explicitly (rather than a blind toggle) so the caller
+     * -MainActivity- can first resolve the Android 13+ POST_NOTIFICATIONS runtime permission
+     * and only turn things on if it was actually granted.
+     */
+    fun setNotificationsEnabled(enabled: Boolean) {
+        _notificationsEnabled.value = enabled
+        viewModelScope.launch { prefs.saveNotifications(enabled) }
+        if (enabled) {
+            ReleaseNotificationScheduler.enable(getApplication())
+        } else {
+            ReleaseNotificationScheduler.disable(getApplication())
+        }
     }
 
     fun fetchReleases() {
@@ -106,17 +130,45 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             _releasesLoading.value = true
             _releasesError.value = null
             try {
+                // Primary source: read releases directly from the official HackerOS website's
+                // release data file, the same one that powers the "Releases" page on
+                // https://hackeros-linux-system.github.io/HackerOS-Website/releases.html
                 val text = withContext(Dispatchers.IO) {
-                    URL("${Constants.RELEASE_INFO_URL}?t=${System.currentTimeMillis()}")
+                    URL("${Constants.WEBSITE_RELEASES_JS_URL}?t=${System.currentTimeMillis()}")
                         .readText()
                 }
-                _releases.value = ReleaseParser.parse(text)
+                val parsed = WebsiteReleaseParser.parse(text, _currentLanguage.value)
+                if (parsed.isEmpty()) throw IllegalStateException("No release data found")
+                _releases.value = parsed
+                rememberLastSeenVersion(parsed)
             } catch (e: Exception) {
-                _releasesError.value = "Connection failed. Check your uplink."
+                // Fallback: legacy .hacker release file, kept only for offline/outage resilience.
+                try {
+                    val legacyText = withContext(Dispatchers.IO) {
+                        URL("${Constants.LEGACY_RELEASE_INFO_URL}?t=${System.currentTimeMillis()}")
+                            .readText()
+                    }
+                    val legacyParsed = ReleaseParser.parse(legacyText)
+                    if (legacyParsed.isEmpty()) throw IllegalStateException("No legacy release data found")
+                    _releases.value = legacyParsed
+                    rememberLastSeenVersion(legacyParsed)
+                } catch (e2: Exception) {
+                    _releasesError.value = "Connection failed. Check your uplink."
+                }
             } finally {
                 _releasesLoading.value = false
             }
         }
+    }
+
+    /**
+     * Whenever the user has actually seen the releases list in-app, remember the newest
+     * version as "already known" so the background worker doesn't fire a redundant
+     * notification for something the user just looked at.
+     */
+    private fun rememberLastSeenVersion(releases: List<ReleaseInfo>) {
+        val latest = releases.firstOrNull() ?: return
+        viewModelScope.launch { prefs.saveLastKnownVersion(latest.version) }
     }
 
     fun fetchGallery() {
