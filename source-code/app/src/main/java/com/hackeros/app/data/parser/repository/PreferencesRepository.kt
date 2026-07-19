@@ -20,6 +20,7 @@ class PreferencesRepository(private val context: Context) {
         val THEME_KEY = stringPreferencesKey("hackeros_theme")
         val LANG_KEY = stringPreferencesKey("hackeros_lang")
         val NOTIFICATIONS_KEY = booleanPreferencesKey("hackeros_notifications")
+        val LAST_KNOWN_VERSION_KEY = stringPreferencesKey("hackeros_last_known_version")
     }
 
     val themeFlow: Flow<ThemeId> = context.dataStore.data.map { prefs ->
@@ -36,6 +37,13 @@ class PreferencesRepository(private val context: Context) {
         prefs[NOTIFICATIONS_KEY] ?: false
     }
 
+    // Version of the release that was last seen (either shown in-app or already notified
+    // about), used by the background worker to detect genuinely *new* releases and avoid
+    // notifying about a version the user has already seen.
+    val lastKnownVersionFlow: Flow<String?> = context.dataStore.data.map { prefs ->
+        prefs[LAST_KNOWN_VERSION_KEY]
+    }
+
     suspend fun saveTheme(themeId: ThemeId) {
         context.dataStore.edit { it[THEME_KEY] = themeId.name }
     }
@@ -46,5 +54,9 @@ class PreferencesRepository(private val context: Context) {
 
     suspend fun saveNotifications(enabled: Boolean) {
         context.dataStore.edit { it[NOTIFICATIONS_KEY] = enabled }
+    }
+
+    suspend fun saveLastKnownVersion(version: String) {
+        context.dataStore.edit { it[LAST_KNOWN_VERSION_KEY] = version }
     }
 }
