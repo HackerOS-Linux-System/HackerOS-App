@@ -1,8 +1,16 @@
 package com.hackeros.app
 
 object Constants {
-    const val APP_VERSION = "0.4"
-    const val RELEASE_INFO_URL = "https://raw.githubusercontent.com/HackerOS-Linux-System/HackerOS-App/main/release-info.hacker"
+    const val APP_VERSION = "0.5"
+
+    // Primary release source: read directly from the official HackerOS website's
+    // release data (the same JS data file that powers https://hackeros-linux-system.github.io/HackerOS-Website/releases.html)
+    const val WEBSITE_RELEASES_PAGE_URL = "https://hackeros-linux-system.github.io/HackerOS-Website/releases.html"
+    const val WEBSITE_RELEASES_JS_URL = "https://raw.githubusercontent.com/HackerOS-Linux-System/HackerOS-Website/main/translations/releases.js"
+
+    // Legacy/offline fallback source, used only if the website data cannot be reached.
+    const val LEGACY_RELEASE_INFO_URL = "https://raw.githubusercontent.com/HackerOS-Linux-System/HackerOS-App/main/release-info.hacker"
+
     const val VERSION_CHECK_URL = "https://raw.githubusercontent.com/HackerOS-Linux-System/HackerOS-App/main/version.hacker"
     const val GALLERY_API_URL = "https://api.github.com/repos/HackerOS-Linux-System/HackerOS-App/contents/gallery"
 
