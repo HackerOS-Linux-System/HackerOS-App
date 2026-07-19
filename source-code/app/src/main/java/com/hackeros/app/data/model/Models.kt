@@ -37,7 +37,12 @@ enum class Language(val code: String, val displayName: String, val flag: String)
     EN("en", "English", "🇺🇸"),
     DE("de", "Deutsch", "🇩🇪"),
     ES("es", "Español", "🇪🇸"),
-    FR("fr", "Français", "🇫🇷")
+    FR("fr", "Français", "🇫🇷"),
+    IT("it", "Italiano", "🇮🇹"),
+    RU("ru", "Русский", "🇷🇺"),
+    UK("uk", "Українська", "🇺🇦"),
+    ZH("zh", "中文", "🇨🇳"),
+    JA("ja", "日本語", "🇯🇵")
 }
 
 data class AppTheme(
