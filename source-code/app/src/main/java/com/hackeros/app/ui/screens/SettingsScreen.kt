@@ -80,13 +80,7 @@ fun SettingsScreen(
 
         // Language
         SectionCard(title = t.settings_lang, icon = Icons.Default.Translate, sectionBg, sectionBorder, cardShape, theme.primaryColor()) {
-            val langs = listOf(
-                Language.PL to ("🇵🇱" to "Polski"),
-                Language.EN to ("🇺🇸" to "English"),
-                Language.DE to ("🇩🇪" to "Deutsch"),
-                Language.ES to ("🇪🇸" to "Español"),
-                Language.FR to ("🇫🇷" to "Français"),
-            )
+            val langs = Language.entries.map { it to (it.flag to it.displayName) }
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 langs.chunked(2).forEach { row ->
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
