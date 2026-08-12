@@ -1,1 +1,83 @@
+name: Build APKs
 
+# Manually triggerable from the Actions tab ("Run workflow"), and also runs automatically on
+# pushes/PRs that touch the Android source, so regressions are caught early.
+on:
+  workflow_dispatch:
+  push:
+    branches: [ main ]
+    paths:
+      - "source-code/**"
+      - ".github/workflows/build.yml"
+  pull_request:
+    branches: [ main ]
+    paths:
+      - "source-code/**"
+      - ".github/workflows/build.yml"
+
+jobs:
+  build:
+    name: Build debug + release APKs
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Grant execute permission for gradlew
+        working-directory: source-code
+        run: chmod +x ./gradlew
+
+      - name: Cache Gradle packages
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: gradle-${{ runner.os }}-${{ hashFiles('source-code/**/*.gradle*', 'source-code/gradle/wrapper/gradle-wrapper.properties') }}
+          restore-keys: |
+            gradle-${{ runner.os }}-
+
+      - name: Build debug APK
+        working-directory: source-code
+        run: ./gradlew assembleDebug --stacktrace
+
+      - name: Build release APK
+        working-directory: source-code
+        run: ./gradlew assembleRelease --stacktrace
+
+      - name: Collect APKs into outputs/
+        run: |
+          mkdir -p outputs
+          find source-code/app/build/outputs/apk/debug -name "*.apk" -exec cp {} outputs/ \;
+          find source-code/app/build/outputs/apk/release -name "*.apk" -exec cp {} outputs/ \;
+          ls -la outputs
+
+      - name: Read app version
+        id: version
+        run: |
+          VERSION=$(grep -m1 'versionName' source-code/app/build.gradle.kts | sed -E 's/.*"([^"]+)".*/\1/')
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
+      - name: Zip APKs
+        run: |
+          cd outputs
+          zip -r "HackerOS-App-v${{ steps.version.outputs.version }}-apks.zip" *.apk
+          rm -f *.apk
+          ls -la
+
+      - name: Upload outputs artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: outputs
+          path: outputs/*.zip
+          if-no-files-found: error
