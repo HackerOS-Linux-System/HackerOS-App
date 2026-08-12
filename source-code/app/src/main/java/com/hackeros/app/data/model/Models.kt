@@ -19,10 +19,13 @@ data class GalleryImage(
 )
 
 enum class AppScreen {
-    RELEASES, WALLPAPERS, GALLERY, TEAM, SETTINGS
+    RELEASES, WALLPAPERS, GALLERY, DOCS, TEAM, SETTINGS
 }
 
 enum class ThemeId(val themeName: String) {
+    // New default theme as of v0.5: a clean, neutral gray/white/black look. Listed first so it
+    // also shows first in the theme picker grid on the Settings screen.
+    MONOCHROME("Monochrome"),
     HACKER("HackerOS Original"),
     CYBERPUNK("Night City"),
     OCEAN("Deep Sea"),
