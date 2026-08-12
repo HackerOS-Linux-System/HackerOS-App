@@ -52,7 +52,7 @@ class MainActivity : ComponentActivity() {
                 val updateStatus by viewModel.updateStatus.collectAsState()
                 val remoteVersion by viewModel.remoteVersion.collectAsState()
 
-                val appTheme = THEMES[currentThemeId] ?: THEMES[com.hackeros.app.data.model.ThemeId.HACKER]!!
+                val appTheme = THEMES[currentThemeId] ?: THEMES[com.hackeros.app.data.model.ThemeId.MONOCHROME]!!
                 val translations = getTranslations(currentLanguage)
 
                 val notificationPermissionLauncher = rememberLauncherForActivityResult(
@@ -118,6 +118,7 @@ class MainActivity : ComponentActivity() {
                                         translations = translations,
                                         onRetry = { viewModel.fetchGallery() }
                                     )
+                                    AppScreen.DOCS -> DocumentationScreen(translations = translations)
                                     AppScreen.TEAM -> TeamScreen(translations = translations)
                                     AppScreen.SETTINGS -> SettingsScreen(
                                         currentTheme = currentThemeId,
