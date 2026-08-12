@@ -54,7 +54,28 @@ data class Translations(
     val notif_channel_desc: String,
     val notif_new_release_title: String,
     val notif_new_release_body: String,
-    val notif_permission_denied: String
+    val notif_permission_denied: String,
+    // --- v0.5: native in-app documentation tab ---
+    // Default values (English) are supplied so every existing language block below keeps
+    // compiling unchanged; PL and EN are fully localized, the rest fall back to these English
+    // defaults until translated (matches the upstream website's own PL/EN-first documentation
+    // content, where every other language currently falls back to English too).
+    val nav_docs: String = "Docs",
+    val header_docs: String = "Documentation",
+    val sub_docs: String = "Official HackerOS Documentation",
+    // --- v0.5: wallpaper install-to-device + set-as-wallpaper flow ---
+    val wallpaper_install: String = "INSTALL ON DEVICE",
+    val wallpaper_installing: String = "INSTALLING...",
+    val wallpaper_installed: String = "INSTALLED",
+    val wallpaper_install_error: String = "Install failed",
+    val wallpaper_set_default: String = "SET AS DEFAULT WALLPAPER",
+    val wallpaper_choose_target_title: String = "Where should this wallpaper be set?",
+    val wallpaper_target_home: String = "Home Screen",
+    val wallpaper_target_lock: String = "Lock Screen",
+    val wallpaper_target_both: String = "Both",
+    val wallpaper_target_cancel: String = "Cancel",
+    val wallpaper_set_success: String = "Wallpaper set successfully",
+    val wallpaper_set_error: String = "Failed to set wallpaper"
 )
 
 val TRANSLATIONS: Map<Language, Translations> = mapOf(
@@ -88,7 +109,21 @@ val TRANSLATIONS: Map<Language, Translations> = mapOf(
         notif_channel_desc = "Powiadomienia o nowych wydaniach systemu HackerOS",
         notif_new_release_title = "Dostępne nowe wydanie HackerOS",
         notif_new_release_body = "Wydano",
-        notif_permission_denied = "Odmówiono zgody na powiadomienia"
+        notif_permission_denied = "Odmówiono zgody na powiadomienia",
+        nav_docs = "Dokumentacja", header_docs = "Dokumentacja",
+        sub_docs = "Oficjalna dokumentacja HackerOS",
+        wallpaper_install = "ZAINSTALUJ NA URZĄDZENIU",
+        wallpaper_installing = "INSTALOWANIE...",
+        wallpaper_installed = "ZAINSTALOWANO",
+        wallpaper_install_error = "Instalacja nie powiodła się",
+        wallpaper_set_default = "USTAW JAKO DOMYŚLNĄ TAPETĘ",
+        wallpaper_choose_target_title = "Gdzie ustawić tę tapetę?",
+        wallpaper_target_home = "Ekran główny (pulpit)",
+        wallpaper_target_lock = "Ekran blokady",
+        wallpaper_target_both = "Oba",
+        wallpaper_target_cancel = "Anuluj",
+        wallpaper_set_success = "Tapeta ustawiona pomyślnie",
+        wallpaper_set_error = "Nie udało się ustawić tapety"
     ),
     Language.EN to Translations(
         nav_releases = "Releases", nav_wallpapers = "Wallpapers", nav_gallery = "Gallery",
@@ -121,7 +156,21 @@ val TRANSLATIONS: Map<Language, Translations> = mapOf(
         notif_channel_desc = "Notifications about new HackerOS system releases",
         notif_new_release_title = "New HackerOS release available",
         notif_new_release_body = "Released",
-        notif_permission_denied = "Notification permission denied"
+        notif_permission_denied = "Notification permission denied",
+        nav_docs = "Docs", header_docs = "Documentation",
+        sub_docs = "Official HackerOS Documentation",
+        wallpaper_install = "INSTALL ON DEVICE",
+        wallpaper_installing = "INSTALLING...",
+        wallpaper_installed = "INSTALLED",
+        wallpaper_install_error = "Install failed",
+        wallpaper_set_default = "SET AS DEFAULT WALLPAPER",
+        wallpaper_choose_target_title = "Where should this wallpaper be set?",
+        wallpaper_target_home = "Home Screen",
+        wallpaper_target_lock = "Lock Screen",
+        wallpaper_target_both = "Both",
+        wallpaper_target_cancel = "Cancel",
+        wallpaper_set_success = "Wallpaper set successfully",
+        wallpaper_set_error = "Failed to set wallpaper"
     ),
     Language.DE to Translations(
         nav_releases = "Releases", nav_wallpapers = "Hintergründe", nav_gallery = "Galerie",
@@ -153,7 +202,21 @@ val TRANSLATIONS: Map<Language, Translations> = mapOf(
         notif_channel_desc = "Benachrichtigungen über neue HackerOS-Systemversionen",
         notif_new_release_title = "Neue HackerOS-Version verfügbar",
         notif_new_release_body = "Veröffentlicht",
-        notif_permission_denied = "Benachrichtigungsberechtigung verweigert"
+        notif_permission_denied = "Benachrichtigungsberechtigung verweigert",
+        nav_docs = "Doku", header_docs = "Dokumentation",
+        sub_docs = "Offizielle HackerOS-Dokumentation",
+        wallpaper_install = "AUF GERÄT INSTALLIEREN",
+        wallpaper_installing = "INSTALLATION...",
+        wallpaper_installed = "INSTALLIERT",
+        wallpaper_install_error = "Installation fehlgeschlagen",
+        wallpaper_set_default = "ALS STANDARD-HINTERGRUND FESTLEGEN",
+        wallpaper_choose_target_title = "Wo soll dieser Hintergrund gesetzt werden?",
+        wallpaper_target_home = "Startbildschirm",
+        wallpaper_target_lock = "Sperrbildschirm",
+        wallpaper_target_both = "Beide",
+        wallpaper_target_cancel = "Abbrechen",
+        wallpaper_set_success = "Hintergrund erfolgreich festgelegt",
+        wallpaper_set_error = "Hintergrund konnte nicht festgelegt werden"
     ),
     Language.ES to Translations(
         nav_releases = "Versiones", nav_wallpapers = "Fondos", nav_gallery = "Galería",
@@ -185,7 +248,21 @@ val TRANSLATIONS: Map<Language, Translations> = mapOf(
         notif_channel_desc = "Notificaciones sobre nuevas versiones del sistema HackerOS",
         notif_new_release_title = "Nueva versión de HackerOS disponible",
         notif_new_release_body = "Publicada",
-        notif_permission_denied = "Permiso de notificaciones denegado"
+        notif_permission_denied = "Permiso de notificaciones denegado",
+        nav_docs = "Docs", header_docs = "Documentación",
+        sub_docs = "Documentación oficial de HackerOS",
+        wallpaper_install = "INSTALAR EN EL DISPOSITIVO",
+        wallpaper_installing = "INSTALANDO...",
+        wallpaper_installed = "INSTALADO",
+        wallpaper_install_error = "Error al instalar",
+        wallpaper_set_default = "ESTABLECER COMO FONDO PREDETERMINADO",
+        wallpaper_choose_target_title = "¿Dónde establecer este fondo?",
+        wallpaper_target_home = "Pantalla de inicio",
+        wallpaper_target_lock = "Pantalla de bloqueo",
+        wallpaper_target_both = "Ambas",
+        wallpaper_target_cancel = "Cancelar",
+        wallpaper_set_success = "Fondo establecido correctamente",
+        wallpaper_set_error = "No se pudo establecer el fondo"
     ),
     Language.FR to Translations(
         nav_releases = "Versions", nav_wallpapers = "Fonds", nav_gallery = "Galerie",
@@ -217,7 +294,21 @@ val TRANSLATIONS: Map<Language, Translations> = mapOf(
         notif_channel_desc = "Notifications concernant les nouvelles versions du système HackerOS",
         notif_new_release_title = "Nouvelle version HackerOS disponible",
         notif_new_release_body = "Publiée",
-        notif_permission_denied = "Autorisation de notification refusée"
+        notif_permission_denied = "Autorisation de notification refusée",
+        nav_docs = "Docs", header_docs = "Documentation",
+        sub_docs = "Documentation officielle HackerOS",
+        wallpaper_install = "INSTALLER SUR L'APPAREIL",
+        wallpaper_installing = "INSTALLATION...",
+        wallpaper_installed = "INSTALLÉ",
+        wallpaper_install_error = "Échec de l'installation",
+        wallpaper_set_default = "DÉFINIR COMME FOND D'ÉCRAN PAR DÉFAUT",
+        wallpaper_choose_target_title = "Où définir ce fond d'écran ?",
+        wallpaper_target_home = "Écran d'accueil",
+        wallpaper_target_lock = "Écran de verrouillage",
+        wallpaper_target_both = "Les deux",
+        wallpaper_target_cancel = "Annuler",
+        wallpaper_set_success = "Fond d'écran défini avec succès",
+        wallpaper_set_error = "Échec de la définition du fond d'écran"
     ),
     Language.IT to Translations(
         nav_releases = "Versioni", nav_wallpapers = "Sfondi", nav_gallery = "Galleria",
@@ -249,7 +340,21 @@ val TRANSLATIONS: Map<Language, Translations> = mapOf(
         notif_channel_desc = "Notifiche sulle nuove versioni del sistema HackerOS",
         notif_new_release_title = "Nuova versione HackerOS disponibile",
         notif_new_release_body = "Pubblicata",
-        notif_permission_denied = "Autorizzazione notifiche negata"
+        notif_permission_denied = "Autorizzazione notifiche negata",
+        nav_docs = "Docs", header_docs = "Documentazione",
+        sub_docs = "Documentazione ufficiale HackerOS",
+        wallpaper_install = "INSTALLA SUL DISPOSITIVO",
+        wallpaper_installing = "INSTALLAZIONE...",
+        wallpaper_installed = "INSTALLATO",
+        wallpaper_install_error = "Installazione non riuscita",
+        wallpaper_set_default = "IMPOSTA COME SFONDO PREDEFINITO",
+        wallpaper_choose_target_title = "Dove impostare questo sfondo?",
+        wallpaper_target_home = "Schermata Home",
+        wallpaper_target_lock = "Schermata di blocco",
+        wallpaper_target_both = "Entrambe",
+        wallpaper_target_cancel = "Annulla",
+        wallpaper_set_success = "Sfondo impostato con successo",
+        wallpaper_set_error = "Impossibile impostare lo sfondo"
     ),
     Language.RU to Translations(
         nav_releases = "Релизы", nav_wallpapers = "Обои", nav_gallery = "Галерея",
@@ -281,7 +386,21 @@ val TRANSLATIONS: Map<Language, Translations> = mapOf(
         notif_channel_desc = "Уведомления о новых релизах системы HackerOS",
         notif_new_release_title = "Доступен новый релиз HackerOS",
         notif_new_release_body = "Выпущен",
-        notif_permission_denied = "В разрешении на уведомления отказано"
+        notif_permission_denied = "В разрешении на уведомления отказано",
+        nav_docs = "Документация", header_docs = "Документация",
+        sub_docs = "Официальная документация HackerOS",
+        wallpaper_install = "УСТАНОВИТЬ НА УСТРОЙСТВО",
+        wallpaper_installing = "УСТАНОВКА...",
+        wallpaper_installed = "УСТАНОВЛЕНО",
+        wallpaper_install_error = "Ошибка установки",
+        wallpaper_set_default = "УСТАНОВИТЬ КАК ОБОИ ПО УМОЛЧАНИЮ",
+        wallpaper_choose_target_title = "Куда установить эти обои?",
+        wallpaper_target_home = "Главный экран",
+        wallpaper_target_lock = "Экран блокировки",
+        wallpaper_target_both = "Оба",
+        wallpaper_target_cancel = "Отмена",
+        wallpaper_set_success = "Обои успешно установлены",
+        wallpaper_set_error = "Не удалось установить обои"
     ),
     Language.UK to Translations(
         nav_releases = "Релізи", nav_wallpapers = "Шпалери", nav_gallery = "Галерея",
@@ -313,7 +432,21 @@ val TRANSLATIONS: Map<Language, Translations> = mapOf(
         notif_channel_desc = "Сповіщення про нові релізи системи HackerOS",
         notif_new_release_title = "Доступний новий реліз HackerOS",
         notif_new_release_body = "Випущено",
-        notif_permission_denied = "У дозволі на сповіщення відмовлено"
+        notif_permission_denied = "У дозволі на сповіщення відмовлено",
+        nav_docs = "Документація", header_docs = "Документація",
+        sub_docs = "Офіційна документація HackerOS",
+        wallpaper_install = "ВСТАНОВИТИ НА ПРИСТРІЙ",
+        wallpaper_installing = "ВСТАНОВЛЕННЯ...",
+        wallpaper_installed = "ВСТАНОВЛЕНО",
+        wallpaper_install_error = "Помилка встановлення",
+        wallpaper_set_default = "ВСТАНОВИТИ ЯК ШПАЛЕРИ ЗА ЗАМОВЧУВАННЯМ",
+        wallpaper_choose_target_title = "Куди встановити ці шпалери?",
+        wallpaper_target_home = "Головний екран",
+        wallpaper_target_lock = "Екран блокування",
+        wallpaper_target_both = "Обидва",
+        wallpaper_target_cancel = "Скасувати",
+        wallpaper_set_success = "Шпалери успішно встановлено",
+        wallpaper_set_error = "Не вдалося встановити шпалери"
     ),
     Language.ZH to Translations(
         nav_releases = "版本", nav_wallpapers = "壁纸", nav_gallery = "图库",
@@ -345,7 +478,21 @@ val TRANSLATIONS: Map<Language, Translations> = mapOf(
         notif_channel_desc = "关于 HackerOS 系统新版本的通知",
         notif_new_release_title = "有新的 HackerOS 版本可用",
         notif_new_release_body = "已发布",
-        notif_permission_denied = "通知权限被拒绝"
+        notif_permission_denied = "通知权限被拒绝",
+        nav_docs = "文档", header_docs = "文档",
+        sub_docs = "HackerOS 官方文档",
+        wallpaper_install = "安装到设备",
+        wallpaper_installing = "正在安装...",
+        wallpaper_installed = "已安装",
+        wallpaper_install_error = "安装失败",
+        wallpaper_set_default = "设为默认壁纸",
+        wallpaper_choose_target_title = "将此壁纸设置到哪里？",
+        wallpaper_target_home = "主屏幕",
+        wallpaper_target_lock = "锁屏",
+        wallpaper_target_both = "两者",
+        wallpaper_target_cancel = "取消",
+        wallpaper_set_success = "壁纸设置成功",
+        wallpaper_set_error = "壁纸设置失败"
     ),
     Language.JA to Translations(
         nav_releases = "リリース", nav_wallpapers = "壁紙", nav_gallery = "ギャラリー",
@@ -377,7 +524,21 @@ val TRANSLATIONS: Map<Language, Translations> = mapOf(
         notif_channel_desc = "HackerOS システムの新しいリリースに関する通知",
         notif_new_release_title = "新しい HackerOS リリースが利用可能です",
         notif_new_release_body = "リリース済み",
-        notif_permission_denied = "通知の権限が拒否されました"
+        notif_permission_denied = "通知の権限が拒否されました",
+        nav_docs = "ドキュメント", header_docs = "ドキュメント",
+        sub_docs = "HackerOS 公式ドキュメント",
+        wallpaper_install = "デバイスにインストール",
+        wallpaper_installing = "インストール中...",
+        wallpaper_installed = "インストール済み",
+        wallpaper_install_error = "インストールに失敗しました",
+        wallpaper_set_default = "デフォルトの壁紙に設定",
+        wallpaper_choose_target_title = "この壁紙をどこに設定しますか？",
+        wallpaper_target_home = "ホーム画面",
+        wallpaper_target_lock = "ロック画面",
+        wallpaper_target_both = "両方",
+        wallpaper_target_cancel = "キャンセル",
+        wallpaper_set_success = "壁紙を設定しました",
+        wallpaper_set_error = "壁紙の設定に失敗しました"
     )
 )
 
