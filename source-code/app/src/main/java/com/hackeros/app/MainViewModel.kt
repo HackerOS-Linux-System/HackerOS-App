@@ -31,7 +31,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     val currentScreen: StateFlow<AppScreen> = _currentScreen.asStateFlow()
 
     // --- Theme & Language ---
-    private val _currentTheme = MutableStateFlow(ThemeId.HACKER)
+    private val _currentTheme = MutableStateFlow(ThemeId.MONOCHROME)
     val currentTheme: StateFlow<ThemeId> = _currentTheme.asStateFlow()
 
     private val _currentLanguage = MutableStateFlow(Language.PL)
@@ -131,10 +131,12 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             _releasesError.value = null
             try {
                 // Primary source: read releases directly from the official HackerOS website's
-                // release data file, the same one that powers the "Releases" page on
-                // https://hackeros-linux-system.github.io/HackerOS-Website/releases.html
+                // real per-language release data file - the same data the "Releases" page on
+                // https://hackeros-linux-system.github.io/HackerOS-Website/releases.html merges
+                // in at runtime via JS. See Constants.releasesUrlFor()/WebsiteReleaseParser for why.
+                val langCode = _currentLanguage.value.code
                 val text = withContext(Dispatchers.IO) {
-                    URL("${Constants.WEBSITE_RELEASES_JS_URL}?t=${System.currentTimeMillis()}")
+                    URL("${Constants.releasesUrlFor(langCode)}?t=${System.currentTimeMillis()}")
                         .readText()
                 }
                 val parsed = WebsiteReleaseParser.parse(text, _currentLanguage.value)
