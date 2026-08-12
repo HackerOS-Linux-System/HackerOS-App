@@ -58,7 +58,7 @@ class ReleaseCheckWorker(
     private suspend fun fetchLatestReleases(language: Language): List<ReleaseInfo> =
         withContext(Dispatchers.IO) {
             try {
-                val text = URL("${Constants.WEBSITE_RELEASES_JS_URL}?t=${System.currentTimeMillis()}")
+                val text = URL("${Constants.releasesUrlFor(language.code)}?t=${System.currentTimeMillis()}")
                     .readText()
                 val parsed = WebsiteReleaseParser.parse(text, language)
                 if (parsed.isNotEmpty()) return@withContext parsed
