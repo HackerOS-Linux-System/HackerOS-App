@@ -25,7 +25,7 @@ class PreferencesRepository(private val context: Context) {
 
     val themeFlow: Flow<ThemeId> = context.dataStore.data.map { prefs ->
         val saved = prefs[THEME_KEY]
-        ThemeId.entries.find { it.name == saved } ?: ThemeId.HACKER
+        ThemeId.entries.find { it.name == saved } ?: ThemeId.MONOCHROME
     }
 
     val languageFlow: Flow<Language> = context.dataStore.data.map { prefs ->
