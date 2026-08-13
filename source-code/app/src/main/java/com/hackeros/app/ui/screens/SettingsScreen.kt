@@ -38,9 +38,16 @@ fun SettingsScreen(
     onLanguageChange: (Language) -> Unit,
     notificationsEnabled: Boolean,
     onToggleNotifications: () -> Unit,
+    watchedEditions: Set<String>?,
+    knownEditions: List<String>,
+    onToggleEdition: (String) -> Unit,
+    onResetEditionFilter: () -> Unit,
     updateStatus: MainViewModel.UpdateStatus,
     remoteVersion: String,
     onCheckUpdate: () -> Unit,
+    apkUpdateState: MainViewModel.ApkUpdateState,
+    onDownloadUpdate: () -> Unit,
+    onInstallUpdate: () -> Unit,
     translations: Translations
 ) {
     val theme = LocalAppTheme.current
@@ -239,6 +246,56 @@ fun SettingsScreen(
                         )
                     )
                 }
+
+                // Per-edition notification filter, only relevant once notifications are on.
+                if (notificationsEnabled && knownEditions.isNotEmpty()) {
+                    Spacer(Modifier.height(14.dp))
+                    Divider(color = Color.White.copy(alpha = 0.04f))
+                    Spacer(Modifier.height(14.dp))
+                    Text(t.pref_edition_filter_title, fontSize = 12.sp, fontWeight = FontWeight.Bold,
+                        color = theme.textColor())
+                    Text(t.pref_edition_filter_desc, fontSize = 10.sp, color = theme.mutedColor(),
+                        modifier = Modifier.padding(top = 2.dp, bottom = 10.dp))
+
+                    val isAll = watchedEditions == null
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(10.dp))
+                            .background(if (isAll) theme.primaryColor().copy(0.1f) else Color.White.copy(0.03f))
+                            .clickable { onResetEditionFilter() }
+                            .padding(horizontal = 12.dp, vertical = 10.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(t.pref_edition_filter_all, fontSize = 12.sp, fontWeight = FontWeight.Medium,
+                            color = if (isAll) Color.White else theme.mutedColor())
+                        if (isAll) Icon(Icons.Default.Check, null, tint = theme.primaryColor(), modifier = Modifier.size(16.dp))
+                    }
+                    Spacer(Modifier.height(6.dp))
+                    knownEditions.forEach { edition ->
+                        val checked = if (isAll) true else watchedEditions?.contains(edition) == true
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(10.dp))
+                                .clickable { onToggleEdition(edition) }
+                                .padding(horizontal = 12.dp, vertical = 8.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(edition, fontSize = 12.sp, color = theme.textColor())
+                            Checkbox(
+                                checked = checked,
+                                onCheckedChange = { onToggleEdition(edition) },
+                                colors = CheckboxDefaults.colors(
+                                    checkedColor = theme.primaryColor(),
+                                    uncheckedColor = theme.mutedColor()
+                                )
+                            )
+                        }
+                    }
+                }
             }
         }
 
@@ -300,21 +357,14 @@ fun SettingsScreen(
                 Spacer(Modifier.height(4.dp))
 
                 if (updateStatus == MainViewModel.UpdateStatus.UPDATE_AVAILABLE) {
-                    Button(
-                        onClick = {
-                            val apkUrl = "https://github.com/HackerOS-Linux-System/HackerOS-App/releases/download/v${remoteVersion}/HackerOS-App-${remoteVersion}.apk"
-                            openUrl(apkUrl)
-                        },
-                        colors = ButtonDefaults.buttonColors(containerColor = theme.primaryColor()),
-                        shape = RoundedCornerShape(10.dp),
-                        modifier = Modifier.fillMaxWidth().height(46.dp)
-                    ) {
-                        Icon(Icons.Default.Download, null, tint = theme.backgroundColor(),
-                            modifier = Modifier.size(18.dp))
-                        Spacer(Modifier.width(8.dp))
-                        Text("UPDATE TO v$remoteVersion", fontWeight = FontWeight.Bold,
-                            fontSize = 12.sp, color = theme.backgroundColor())
-                    }
+                    UpdateFlowSection(
+                        remoteVersion = remoteVersion,
+                        apkUpdateState = apkUpdateState,
+                        onDownloadUpdate = onDownloadUpdate,
+                        onInstallUpdate = onInstallUpdate,
+                        translations = t,
+                        theme = theme
+                    )
                 } else {
                     OutlinedButton(
                         onClick = onCheckUpdate,
@@ -351,6 +401,115 @@ fun SettingsScreen(
             letterSpacing = 3.sp,
             modifier = Modifier.align(Alignment.CenterHorizontally)
         )
+    }
+}
+
+@Composable
+private fun UpdateFlowSection(
+    remoteVersion: String,
+    apkUpdateState: MainViewModel.ApkUpdateState,
+    onDownloadUpdate: () -> Unit,
+    onInstallUpdate: () -> Unit,
+    translations: Translations,
+    theme: com.hackeros.app.data.model.AppTheme
+) {
+    val t = translations
+    when (apkUpdateState) {
+        is MainViewModel.ApkUpdateState.Idle -> {
+            Button(
+                onClick = onDownloadUpdate,
+                colors = ButtonDefaults.buttonColors(containerColor = theme.primaryColor()),
+                shape = RoundedCornerShape(10.dp),
+                modifier = Modifier.fillMaxWidth().height(46.dp)
+            ) {
+                Icon(Icons.Default.Download, null, tint = theme.backgroundColor(), modifier = Modifier.size(18.dp))
+                Spacer(Modifier.width(8.dp))
+                Text("UPDATE TO v$remoteVersion", fontWeight = FontWeight.Bold, fontSize = 12.sp, color = theme.backgroundColor())
+            }
+        }
+        is MainViewModel.ApkUpdateState.Downloading -> {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(10.dp))
+                    .background(Color.White.copy(alpha = 0.04f))
+                    .padding(12.dp)
+            ) {
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                    Text(t.update_downloading, fontSize = 11.sp, fontWeight = FontWeight.Bold,
+                        fontFamily = FontFamily.Monospace, color = theme.textColor())
+                    Text("${apkUpdateState.progress}%", fontSize = 11.sp, fontWeight = FontWeight.Bold,
+                        fontFamily = FontFamily.Monospace, color = theme.primaryColor())
+                }
+                Spacer(Modifier.height(8.dp))
+                LinearProgressIndicator(
+                    progress = { apkUpdateState.progress / 100f },
+                    modifier = Modifier.fillMaxWidth().height(6.dp).clip(RoundedCornerShape(3.dp)),
+                    color = theme.primaryColor(),
+                    trackColor = Color.White.copy(alpha = 0.08f)
+                )
+            }
+        }
+        is MainViewModel.ApkUpdateState.Verifying -> {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(10.dp))
+                    .background(Color.White.copy(alpha = 0.04f))
+                    .padding(14.dp),
+                horizontalArrangement = Arrangement.Center,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                CircularProgressIndicator(color = theme.primaryColor(), modifier = Modifier.size(16.dp), strokeWidth = 2.dp)
+                Spacer(Modifier.width(10.dp))
+                Text(t.update_verifying, fontSize = 12.sp, fontWeight = FontWeight.Bold, color = theme.textColor())
+            }
+        }
+        is MainViewModel.ApkUpdateState.ReadyToInstall -> {
+            Column {
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Icon(
+                        if (apkUpdateState.verified) Icons.Default.VerifiedUser else Icons.Default.Info,
+                        null,
+                        tint = if (apkUpdateState.verified) Color(0xFF22C55E) else Color(0xFFF59E0B),
+                        modifier = Modifier.size(14.dp)
+                    )
+                    Text(
+                        if (apkUpdateState.verified) t.update_verified else t.update_unverified,
+                        fontSize = 10.sp,
+                        color = if (apkUpdateState.verified) Color(0xFF22C55E) else Color(0xFFF59E0B)
+                    )
+                }
+                Spacer(Modifier.height(10.dp))
+                Button(
+                    onClick = onInstallUpdate,
+                    colors = ButtonDefaults.buttonColors(containerColor = theme.primaryColor()),
+                    shape = RoundedCornerShape(10.dp),
+                    modifier = Modifier.fillMaxWidth().height(46.dp)
+                ) {
+                    Icon(Icons.Default.InstallMobile, null, tint = theme.backgroundColor(), modifier = Modifier.size(18.dp))
+                    Spacer(Modifier.width(8.dp))
+                    Text(t.update_install, fontWeight = FontWeight.Bold, fontSize = 12.sp, color = theme.backgroundColor())
+                }
+            }
+        }
+        is MainViewModel.ApkUpdateState.Error -> {
+            Column {
+                Text(t.update_error, color = Color(0xFFEF4444), fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                Spacer(Modifier.height(8.dp))
+                OutlinedButton(
+                    onClick = onDownloadUpdate,
+                    shape = RoundedCornerShape(10.dp),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFEF4444).copy(alpha = 0.4f)),
+                    colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFFEF4444)),
+                    modifier = Modifier.fillMaxWidth().height(42.dp)
+                ) {
+                    Icon(Icons.Default.Refresh, null, modifier = Modifier.size(14.dp))
+                    Spacer(Modifier.width(8.dp))
+                    Text(t.update_retry, fontWeight = FontWeight.Bold, fontSize = 11.sp)
+                }
+            }
+        }
     }
 }
 
