@@ -19,6 +19,9 @@ jobs:
   build:
     name: Build debug + release APKs
     runs-on: ubuntu-latest
+    # Hard safety net: this job must never sit "waiting" indefinitely. If anything ever hangs
+    # again, the run fails loudly after 30 minutes instead of stalling silently.
+    timeout-minutes: 30
 
     steps:
       - name: Checkout repository
@@ -30,8 +33,25 @@ jobs:
           distribution: temurin
           java-version: "17"
 
-      - name: Set up Android SDK
-        uses: android-actions/setup-android@v3
+      # NOTE: intentionally NOT using a third-party "setup-android" action here.
+      # GitHub's ubuntu-latest runners already ship a fully installed, license-accepted Android
+      # SDK at $ANDROID_HOME/$ANDROID_SDK_ROOT. A separate SDK-setup action was previously used
+      # here and is what caused the workflow to hang "waiting" - it re-installs SDK components
+      # and can block on interactive license prompts. The Android Gradle Plugin can already
+      # auto-download any additional platform/build-tools it needs during the build itself,
+      # using the runner's pre-accepted licenses, so no extra action is required.
+      - name: Verify preinstalled Android SDK
+        run: |
+          echo "ANDROID_HOME=$ANDROID_HOME"
+          echo "ANDROID_SDK_ROOT=$ANDROID_SDK_ROOT"
+          ls "$ANDROID_HOME" || true
+
+      # Generate local.properties for this run instead of relying on one committed to the repo.
+      # (A hardcoded developer machine path in a committed local.properties previously shadowed
+      # the CI SDK entirely and broke every build - local.properties is now gitignored.)
+      - name: Write local.properties
+        working-directory: source-code
+        run: echo "sdk.dir=$ANDROID_HOME" > local.properties
 
       - name: Grant execute permission for gradlew
         working-directory: source-code
@@ -49,11 +69,11 @@ jobs:
 
       - name: Build debug APK
         working-directory: source-code
-        run: ./gradlew assembleDebug --stacktrace
+        run: ./gradlew assembleDebug --stacktrace --no-daemon
 
       - name: Build release APK
         working-directory: source-code
-        run: ./gradlew assembleRelease --stacktrace
+        run: ./gradlew assembleRelease --stacktrace --no-daemon
 
       - name: Collect APKs into outputs/
         run: |
