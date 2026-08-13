@@ -6,6 +6,7 @@ import androidx.work.WorkerParameters
 import com.hackeros.app.Constants
 import com.hackeros.app.data.model.Language
 import com.hackeros.app.data.model.ReleaseInfo
+import com.hackeros.app.data.model.editionNames
 import com.hackeros.app.data.parser.ReleaseParser
 import com.hackeros.app.data.parser.WebsiteReleaseParser
 import com.hackeros.app.data.repository.PreferencesRepository
@@ -45,7 +46,11 @@ class ReleaseCheckWorker(
 
             val lastKnown = prefs.lastKnownVersionFlow.first()
             if (lastKnown != null && lastKnown != latest.version) {
-                NotificationHelper.showNewReleaseNotification(applicationContext, latest, language)
+                val watched = prefs.watchedEditionsFlow.first()
+                val shouldNotify = watched == null || latest.editionNames().any { it in watched }
+                if (shouldNotify) {
+                    NotificationHelper.showNewReleaseNotification(applicationContext, latest, language)
+                }
             }
             prefs.saveLastKnownVersion(latest.version)
 
