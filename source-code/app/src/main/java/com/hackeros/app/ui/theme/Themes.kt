@@ -6,6 +6,13 @@ import com.hackeros.app.data.model.ThemeId
 
 // All themes matching the React app
 val THEMES: Map<ThemeId, AppTheme> = mapOf(
+    // Default theme as of v0.5 - clean gray/white/black, no accent hue.
+    ThemeId.MONOCHROME to AppTheme(
+        id = ThemeId.MONOCHROME,
+        primary = 0xFFE4E4E7,    // Zinc 200 (near-white accent)
+        background = 0xFF0A0A0A, // near-black
+        card = 0xFF1C1C1E        // neutral dark gray
+    ),
     ThemeId.HACKER to AppTheme(
         id = ThemeId.HACKER,
         primary = 0xFF10B981,    // Emerald 500
