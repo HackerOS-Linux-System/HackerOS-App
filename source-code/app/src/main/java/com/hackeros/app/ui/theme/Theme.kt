@@ -9,7 +9,7 @@ import androidx.compose.ui.graphics.Color
 import com.hackeros.app.data.model.AppTheme
 import com.hackeros.app.data.model.ThemeId
 
-val LocalAppTheme = compositionLocalOf<AppTheme> { THEMES[ThemeId.HACKER]!! }
+val LocalAppTheme = compositionLocalOf<AppTheme> { THEMES[ThemeId.MONOCHROME]!! }
 
 @Composable
 fun HackerOSTheme(
