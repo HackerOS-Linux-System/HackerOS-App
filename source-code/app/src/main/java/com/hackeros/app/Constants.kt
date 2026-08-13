@@ -46,6 +46,24 @@ object Constants {
     // so the docs content, search, and language switching always match the website exactly.
     const val DOCUMENTATION_URL = "https://hackeros-linux-system.github.io/HackerOS-Website/hackeros-documentation.html"
 
+    // Languages for which the official documentation currently has real, translated content
+    // (translations/hackeros-documentation.js). Every other supported app language falls back
+    // to English on the website itself - the app surfaces that with a small in-app banner
+    // instead of silently switching languages on the user.
+    val DOCUMENTATION_CONTENT_LANGUAGES = setOf("pl", "en", "de")
+
+    // --- App updates ----------------------------------------------------------------------
+    //
+    // APK download + checksum verification, mirroring the same "install on device with a live
+    // progress bar" UX already used for wallpapers (see WallpapersScreen/ApkUpdater).
+    fun apkUrlFor(version: String) =
+        "https://github.com/HackerOS-Linux-System/HackerOS-App/releases/download/v$version/HackerOS-App-$version.apk"
+
+    // Convention: a checksum file published alongside the APK on the GitHub Release, containing
+    // just the hex SHA-256 digest. If a given release doesn't publish one, update verification
+    // is skipped gracefully (see ApkUpdater) rather than blocking the update entirely.
+    fun apkChecksumUrlFor(version: String) = "${apkUrlFor(version)}.sha256"
+
     val WALLPAPERS = listOf(
         WallpaperItem(1, "Default HackerOS",
             "https://raw.githubusercontent.com/HackerOS-Linux-System/HackerOS-Website/main/phone-wallpapers/default-wallpaper.png"),
