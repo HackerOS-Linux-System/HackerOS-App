@@ -47,6 +47,7 @@ fun HackerOSNavBar(
         NavItem(AppScreen.RELEASES, Icons.Default.List, translations.nav_releases),
                           NavItem(AppScreen.WALLPAPERS, Icons.Default.Image, translations.nav_wallpapers),
                           NavItem(AppScreen.GALLERY, Icons.Default.CameraAlt, translations.nav_gallery),
+                          NavItem(AppScreen.DOCS, Icons.Default.MenuBook, translations.nav_docs),
                           NavItem(AppScreen.TEAM, Icons.Default.Group, translations.nav_team),
                           NavItem(AppScreen.SETTINGS, Icons.Default.Settings, translations.nav_config),
     )
