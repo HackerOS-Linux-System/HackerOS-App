@@ -51,6 +51,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.ByteArrayOutputStream
+import java.io.File
 import java.net.HttpURLConnection
 import java.net.URL
 
@@ -82,6 +83,24 @@ fun WallpapersScreen(
     var pendingSetWallpaper by remember { mutableStateOf<Pair<WallpaperItem, Bitmap>?>(null) }
     var settingWallpaper by remember { mutableStateOf(false) }
 
+    // Restore previously-installed wallpapers from the local on-disk cache on first composition,
+    // so a wallpaper installed while online is still viewable/settable entirely offline later -
+    // this is the local cache for wallpapers (releases/gallery use DataStore; a raw file cache
+    // is the natural fit here since the cached data is the image bytes themselves).
+    LaunchedEffect(Unit) {
+        withContext(Dispatchers.IO) {
+            wallpapers.forEach { wp ->
+                val cached = wallpaperCacheFile(context, wp.id)
+                if (cached.exists()) {
+                    val bitmap = BitmapFactory.decodeFile(cached.absolutePath)
+                    if (bitmap != null) {
+                        installStates[wp.id] = WallpaperInstallState.Installed(bitmap)
+                    }
+                }
+            }
+        }
+    }
+
     fun installWallpaper(wp: WallpaperItem) {
         scope.launch {
             installStates[wp.id] = WallpaperInstallState.Installing(0)
@@ -93,6 +112,9 @@ fun WallpapersScreen(
                     // Also save a copy to the device's gallery, same as the existing "save"
                     // flow, so the install is visible outside the app too (e.g. in Photos).
                     saveBitmapToGallery(context, bitmap, wp.name)
+                    // And cache it in app-private storage so it's available fully offline on a
+                    // future visit (see the LaunchedEffect above that restores from this cache).
+                    withContext(Dispatchers.IO) { cacheWallpaperLocally(context, wp.id, bitmap) }
                     installStates[wp.id] = WallpaperInstallState.Installed(bitmap)
                 } else {
                     installStates[wp.id] = WallpaperInstallState.Error
@@ -506,6 +528,20 @@ private suspend fun downloadBitmapWithProgress(
         null
     } finally {
         connection?.disconnect()
+    }
+}
+
+/** Local on-disk cache file for a given wallpaper id, under the app's private files dir. */
+private fun wallpaperCacheFile(context: Context, wallpaperId: Int): File =
+    File(context.filesDir, "wallpapers").apply { mkdirs() }.let { File(it, "$wallpaperId.png") }
+
+private fun cacheWallpaperLocally(context: Context, wallpaperId: Int, bitmap: Bitmap) {
+    try {
+        wallpaperCacheFile(context, wallpaperId).outputStream().use { out ->
+            bitmap.compress(Bitmap.CompressFormat.PNG, 100, out)
+        }
+    } catch (_: Exception) {
+        // Non-fatal: offline availability is a bonus, not a hard requirement for installing.
     }
 }
 
