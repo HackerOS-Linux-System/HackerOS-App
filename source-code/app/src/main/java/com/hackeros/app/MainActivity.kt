@@ -23,6 +23,7 @@ import androidx.compose.ui.unit.dp
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import com.hackeros.app.data.model.AppScreen
 import com.hackeros.app.ui.components.HackerOSNavBar
+import com.hackeros.app.ui.components.WhatsNewDialog
 import com.hackeros.app.ui.screens.*
 import com.hackeros.app.ui.theme.*
 import com.hackeros.app.utils.NotificationHelper
@@ -45,12 +46,17 @@ class MainActivity : ComponentActivity() {
                 val releases by viewModel.releases.collectAsState()
                 val releasesLoading by viewModel.releasesLoading.collectAsState()
                 val releasesError by viewModel.releasesError.collectAsState()
+                val releasesFromCache by viewModel.releasesFromCache.collectAsState()
                 val gallery by viewModel.gallery.collectAsState()
                 val galleryLoading by viewModel.galleryLoading.collectAsState()
                 val galleryError by viewModel.galleryError.collectAsState()
+                val galleryFromCache by viewModel.galleryFromCache.collectAsState()
                 val notificationsEnabled by viewModel.notificationsEnabled.collectAsState()
+                val watchedEditions by viewModel.watchedEditions.collectAsState()
                 val updateStatus by viewModel.updateStatus.collectAsState()
                 val remoteVersion by viewModel.remoteVersion.collectAsState()
+                val apkUpdateState by viewModel.apkUpdateState.collectAsState()
+                val showWhatsNew by viewModel.showWhatsNew.collectAsState()
 
                 val appTheme = THEMES[currentThemeId] ?: THEMES[com.hackeros.app.data.model.ThemeId.MONOCHROME]!!
                 val translations = getTranslations(currentLanguage)
@@ -104,6 +110,7 @@ class MainActivity : ComponentActivity() {
                                         releases = releases,
                                         loading = releasesLoading,
                                         error = releasesError,
+                                        fromCache = releasesFromCache,
                                         translations = translations,
                                         onRetry = { viewModel.fetchReleases() }
                                     )
@@ -115,10 +122,14 @@ class MainActivity : ComponentActivity() {
                                         images = gallery,
                                         loading = galleryLoading,
                                         error = galleryError,
+                                        fromCache = galleryFromCache,
                                         translations = translations,
                                         onRetry = { viewModel.fetchGallery() }
                                     )
-                                    AppScreen.DOCS -> DocumentationScreen(translations = translations)
+                                    AppScreen.DOCS -> DocumentationScreen(
+                                        translations = translations,
+                                        currentLanguage = currentLanguage
+                                    )
                                     AppScreen.TEAM -> TeamScreen(translations = translations)
                                     AppScreen.SETTINGS -> SettingsScreen(
                                         currentTheme = currentThemeId,
@@ -136,9 +147,16 @@ class MainActivity : ComponentActivity() {
                                                                                  else -> viewModel.setNotificationsEnabled(true)
                                                                              }
                                                                          },
+                                                                         watchedEditions = watchedEditions,
+                                                                         knownEditions = viewModel.knownEditionNames(),
+                                                                         onToggleEdition = { viewModel.toggleEditionWatch(it) },
+                                                                         onResetEditionFilter = { viewModel.resetEditionFilterToAll() },
                                                                          updateStatus = updateStatus,
                                                                          remoteVersion = remoteVersion,
                                                                          onCheckUpdate = { viewModel.checkForUpdates() },
+                                                                         apkUpdateState = apkUpdateState,
+                                                                         onDownloadUpdate = { viewModel.downloadUpdate() },
+                                                                         onInstallUpdate = { viewModel.installDownloadedUpdate() },
                                                                          translations = translations
                                     )
                                 }
@@ -150,6 +168,16 @@ class MainActivity : ComponentActivity() {
                                 currentScreen = currentScreen,
                                 onScreenChange = { viewModel.setScreen(it) },
                                            translations = translations
+                            )
+                        }
+
+                        // Shown once after an app update, summarizing the newest already-fetched
+                        // release so the user knows what changed without leaving the app.
+                        if (showWhatsNew) {
+                            WhatsNewDialog(
+                                release = releases.firstOrNull(),
+                                translations = translations,
+                                onDismiss = { viewModel.dismissWhatsNew() }
                             )
                         }
                     }
