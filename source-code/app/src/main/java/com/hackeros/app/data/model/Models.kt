@@ -7,6 +7,18 @@ data class ReleaseInfo(
     val news: String
 )
 
+/**
+ * Parses the human-readable "editions" block (e.g. "HackerOS Official: 7.08.2026\nHackerOS
+ * Cybersecurity: 7.08.2026\nHackerOS NVIDIA: 7.08.2026") into just the edition names
+ * ("HackerOS Official", "HackerOS Cybersecurity", "HackerOS NVIDIA"), used to let the user pick
+ * which specific editions they want new-release notifications for.
+ */
+fun ReleaseInfo.editionNames(): List<String> =
+    editions.split("\n")
+        .map { it.substringBefore(":").trim() }
+        .filter { it.isNotBlank() }
+        .distinct()
+
 data class GalleryImage(
     val name: String,
     val sha: String,
