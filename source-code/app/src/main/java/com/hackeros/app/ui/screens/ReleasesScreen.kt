@@ -17,6 +17,11 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.filled.CloudOff
+import androidx.compose.ui.draw.clip
 import com.hackeros.app.data.model.ReleaseInfo
 import com.hackeros.app.ui.components.VersionCard
 import com.hackeros.app.ui.theme.LocalAppTheme
@@ -29,6 +34,7 @@ fun ReleasesScreen(
     releases: List<ReleaseInfo>,
     loading: Boolean,
     error: String?,
+    fromCache: Boolean,
     translations: Translations,
     onRetry: () -> Unit
 ) {
@@ -85,6 +91,11 @@ fun ReleasesScreen(
                 )
             }
             else -> {
+                if (fromCache) {
+                    item {
+                        OfflineBanner(text = t.offline_cached_banner, primaryColor = theme.primaryColor())
+                    }
+                }
                 itemsIndexed(releases) { index, release ->
                     AnimatedVisibility(
                         visible = true,
@@ -123,6 +134,23 @@ fun ReleasesScreen(
                 }
             }
         }
+    }
+}
+
+@Composable
+fun OfflineBanner(text: String, primaryColor: Color) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(10.dp))
+            .background(primaryColor.copy(alpha = 0.08f))
+            .border(1.dp, primaryColor.copy(alpha = 0.25f), RoundedCornerShape(10.dp))
+            .padding(horizontal = 14.dp, vertical = 10.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        Icon(Icons.Default.CloudOff, null, tint = primaryColor, modifier = Modifier.size(14.dp))
+        Text(text, fontSize = 11.sp, fontFamily = FontFamily.Monospace, color = primaryColor)
     }
 }
 
