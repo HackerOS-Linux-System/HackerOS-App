@@ -36,18 +36,21 @@ data class NavItem(
 fun HackerOSNavBar(
     currentScreen: AppScreen,
     onScreenChange: (AppScreen) -> Unit,
-                   translations: Translations
+                   translations: Translations,
+                   docsEnabled: Boolean = true,
+                   gamesStoreEnabled: Boolean = true
 ) {
     val theme = LocalAppTheme.current
     val bgColor = Color(theme.background)
     val primaryColor = Color(theme.primary)
     val mutedColor = Color(0xFF94A3B8)
 
-    val navItems = listOf(
+    val navItems = listOfNotNull(
         NavItem(AppScreen.RELEASES, Icons.Default.List, translations.nav_releases),
                           NavItem(AppScreen.WALLPAPERS, Icons.Default.Image, translations.nav_wallpapers),
                           NavItem(AppScreen.GALLERY, Icons.Default.CameraAlt, translations.nav_gallery),
-                          NavItem(AppScreen.DOCS, Icons.Default.MenuBook, translations.nav_docs),
+                          if (docsEnabled) NavItem(AppScreen.DOCS, Icons.Default.MenuBook, translations.nav_docs) else null,
+                          if (gamesStoreEnabled) NavItem(AppScreen.GAMES_STORE, Icons.Default.SportsEsports, translations.nav_games_store) else null,
                           NavItem(AppScreen.TEAM, Icons.Default.Group, translations.nav_team),
                           NavItem(AppScreen.SETTINGS, Icons.Default.Settings, translations.nav_config),
     )
