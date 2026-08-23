@@ -54,10 +54,47 @@ val THEMES: Map<ThemeId, AppTheme> = mapOf(
         primary = 0xFFEAB308,    // Yellow 500
         background = 0xFF0F0F0F,
         card = 0xFF1E1E1E
+    ),
+    // --- New in v0.6 ---
+    ThemeId.VIOLET to AppTheme(
+        id = ThemeId.VIOLET,
+        primary = 0xFF8B5CF6,    // Violet 500
+        background = 0xFF120A1F,
+        card = 0xFF201233
+    ),
+    ThemeId.TEAL to AppTheme(
+        id = ThemeId.TEAL,
+        primary = 0xFF14B8A6,    // Teal 500
+        background = 0xFF071714,
+        card = 0xFF0E2622
+    ),
+    ThemeId.ROSE to AppTheme(
+        id = ThemeId.ROSE,
+        primary = 0xFFF43F5E,    // Rose 500
+        background = 0xFF1A0810,
+        card = 0xFF2B0F1B
+    ),
+    ThemeId.STEEL to AppTheme(
+        id = ThemeId.STEEL,
+        primary = 0xFF60A5FA,    // Blue 400
+        background = 0xFF0B1220,
+        card = 0xFF162136
     )
 )
 
 fun Color.Companion.fromLong(value: Long) = Color(value)
+
+/**
+ * Resolves the [AppTheme] to actually render for [themeId]. Every built-in theme lives in the
+ * static [THEMES] map; [ThemeId.CUSTOM] instead uses the user's own saved colors ([customTheme]),
+ * falling back to Monochrome if the user selected Custom but hasn't actually saved one yet.
+ */
+fun resolveTheme(themeId: ThemeId, customTheme: AppTheme?): AppTheme {
+    if (themeId == ThemeId.CUSTOM) {
+        return customTheme ?: THEMES.getValue(ThemeId.MONOCHROME)
+    }
+    return THEMES[themeId] ?: THEMES.getValue(ThemeId.MONOCHROME)
+}
 
 fun AppTheme.primaryColor() = Color(primary)
 fun AppTheme.backgroundColor() = Color(background)
