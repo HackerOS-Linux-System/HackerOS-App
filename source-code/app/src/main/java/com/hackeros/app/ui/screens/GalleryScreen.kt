@@ -293,7 +293,7 @@ private fun GalleryPagerDialog(
                             downloading = true
                             downloadImageToGallery(context, images[pagerState.currentPage])
                             downloading = false
-                            Toast.makeText(context, "Saved!", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(context, t.toast_saved, Toast.LENGTH_SHORT).show()
                         }
                     },
                     enabled = !downloading,
