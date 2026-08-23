@@ -1,7 +1,7 @@
 package com.hackeros.app
 
 object Constants {
-    const val APP_VERSION = "0.5"
+    const val APP_VERSION = "0.6"
 
     // --- Releases -----------------------------------------------------------------------
     //
@@ -37,20 +37,17 @@ object Constants {
 
     // --- Documentation --------------------------------------------------------------------
     //
-    // The official HackerOS documentation is a large, richly-formatted, multi-tab HTML page
-    // (headings, code blocks, tables, nested lists, inline links) that is assembled client-side
-    // by the website's own `translations/hackeros-documentation.js` + `translations/doc-engine.js`.
-    // Rather than re-implementing that renderer (whose per-tab schema is intentionally
-    // freeform/heterogeneous and would be fragile to keep in sync by hand), the app shows the
-    // exact same live page natively in-app (an embedded WebView, not an external browser tab),
-    // so the docs content, search, and language switching always match the website exactly.
-    const val DOCUMENTATION_URL = "https://hackeros-linux-system.github.io/HackerOS-Website/hackeros-documentation.html"
+    // As of v0.5.2, documentation is parsed natively - no WebView. The website assembles its
+    // documentation page client-side from two files: `translations/hackeros-documentation.js`
+    // (per-language page metadata + structured content fields, PL/EN/DE fully translated, other
+    // languages fall back to EN exactly like the website does) and `translations/doc-engine.js`
+    // (the renderer, whose per-tab field layout this app's DocContentParser mirrors exactly).
+    // See data/docs/JsLenientJson.kt + data/docs/DocContentParser.kt.
+    const val DOCUMENTATION_JS_URL =
+        "https://raw.githubusercontent.com/HackerOS-Linux-System/HackerOS-Website/main/translations/hackeros-documentation.js"
 
-    // Languages for which the official documentation currently has real, translated content
-    // (translations/hackeros-documentation.js). Every other supported app language falls back
-    // to English on the website itself - the app surfaces that with a small in-app banner
-    // instead of silently switching languages on the user.
-    val DOCUMENTATION_CONTENT_LANGUAGES = setOf("pl", "en", "de")
+    // Kept only as an optional "open on website" escape hatch from Settings/error states.
+    const val DOCUMENTATION_WEB_URL = "https://hackeros-linux-system.github.io/HackerOS-Website/hackeros-documentation.html"
 
     // --- App updates ----------------------------------------------------------------------
     //
@@ -63,6 +60,14 @@ object Constants {
     // just the hex SHA-256 digest. If a given release doesn't publish one, update verification
     // is skipped gracefully (see ApkUpdater) rather than blocking the update entirely.
     fun apkChecksumUrlFor(version: String) = "${apkUrlFor(version)}.sha256"
+
+    // --- Games Store ------------------------------------------------------------------------
+    //
+    // Community game listings for the "Games Store" section - HackerOS-App acts as a manager
+    // for community-submitted phone games, reading the shared catalog file maintained in this
+    // same repository. See data/games/GamesStoreParser.kt for the expected JSON schema.
+    const val GAMES_STORE_JSON_URL =
+        "https://raw.githubusercontent.com/HackerOS-Linux-System/HackerOS-App/main/games-store/community-games.json"
 
     val WALLPAPERS = listOf(
         WallpaperItem(1, "Default HackerOS",
