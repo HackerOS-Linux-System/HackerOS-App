@@ -12,7 +12,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -48,11 +48,18 @@ fun SettingsScreen(
     apkUpdateState: MainViewModel.ApkUpdateState,
     onDownloadUpdate: () -> Unit,
     onInstallUpdate: () -> Unit,
+    docsSectionEnabled: Boolean,
+    onToggleDocsSection: (Boolean) -> Unit,
+    gamesStoreSectionEnabled: Boolean,
+    onToggleGamesStoreSection: (Boolean) -> Unit,
+    customThemeColors: com.hackeros.app.data.model.AppTheme?,
+    onSaveCustomTheme: (primary: Long, background: Long, card: Long) -> Unit,
     translations: Translations
 ) {
     val theme = LocalAppTheme.current
     val t = translations
     val context = LocalContext.current
+    var showCustomThemeDialog by remember { mutableStateOf(false) }
 
     fun openUrl(url: String) {
         context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
@@ -172,18 +179,98 @@ fun SettingsScreen(
                         if (row.size == 1) Spacer(Modifier.weight(1f))
                     }
                 }
+
+                Spacer(Modifier.height(8.dp))
+
+                // Custom theme: either a "create your own" prompt, or (once created) a
+                // selectable tile like the built-in themes plus an edit affordance.
+                if (customThemeColors != null) {
+                    val isCustomSelected = currentTheme == com.hackeros.app.data.model.ThemeId.CUSTOM
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
+                        Box(
+                            modifier = Modifier
+                                .weight(1f)
+                                .clip(RoundedCornerShape(12.dp))
+                                .background(if (isCustomSelected) theme.primaryColor().copy(0.1f) else Color.White.copy(0.03f))
+                                .border(
+                                    1.dp,
+                                    if (isCustomSelected) theme.primaryColor() else Color.White.copy(0.05f),
+                                    RoundedCornerShape(12.dp)
+                                )
+                                .clickable { onThemeChange(com.hackeros.app.data.model.ThemeId.CUSTOM) }
+                                .padding(12.dp)
+                        ) {
+                            Column {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Box(
+                                        modifier = Modifier
+                                            .size(28.dp)
+                                            .clip(RoundedCornerShape(8.dp))
+                                            .background(Color(customThemeColors.primary))
+                                    )
+                                    if (isCustomSelected) {
+                                        Box(
+                                            modifier = Modifier
+                                                .size(8.dp)
+                                                .clip(androidx.compose.foundation.shape.CircleShape)
+                                                .background(theme.primaryColor())
+                                        )
+                                    }
+                                }
+                                Spacer(Modifier.height(8.dp))
+                                Text(
+                                    text = t.theme_custom_label,
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = if (isCustomSelected) Color.White else theme.mutedColor()
+                                )
+                            }
+                        }
+                        Box(
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(12.dp))
+                                .background(Color.White.copy(0.03f))
+                                .border(1.dp, Color.White.copy(0.05f), RoundedCornerShape(12.dp))
+                                .clickable { showCustomThemeDialog = true }
+                                .padding(12.dp)
+                                .align(Alignment.CenterVertically)
+                        ) {
+                            Icon(Icons.Default.Edit, null, tint = theme.mutedColor(), modifier = Modifier.size(20.dp))
+                        }
+                    }
+                } else {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(12.dp))
+                            .background(Color.White.copy(0.03f))
+                            .border(1.dp, Color.White.copy(0.08f), RoundedCornerShape(12.dp))
+                            .clickable { showCustomThemeDialog = true }
+                            .padding(14.dp),
+                        horizontalArrangement = Arrangement.Center,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(Icons.Default.Add, null, tint = theme.primaryColor(), modifier = Modifier.size(16.dp))
+                        Spacer(Modifier.width(8.dp))
+                        Text(t.theme_create_custom, fontSize = 12.sp, fontWeight = FontWeight.Bold, color = theme.primaryColor())
+                    }
+                }
             }
         }
 
         // Socials
         SectionCard(title = t.settings_social, icon = Icons.Default.Language, sectionBg, sectionBorder, cardShape, theme.primaryColor()) {
             val links = listOf(
-                Triple("Discord Community", "Join the server", "https://discord.com/invite/8yHNcBaEKy"),
+                Triple("Discord Community", t.social_join_server, "https://discord.com/invite/8yHNcBaEKy"),
                 Triple("X / Twitter", "@hackeros_linux", "https://x.com/hackeros_linux"),
                 Triple("Linuxiarze.pl", null, "https://linuxiarze.pl/distro-hackeros/"),
                 Triple("DistroWatch", null, "https://distrowatch.com/table.php?distribution=hackeros"),
                 Triple("Reddit", "r/HackerOS_", "https://www.reddit.com/r/HackerOS_/"),
-                Triple("YouTube", "Official Channel", "https://www.youtube.com/channel/UCB_b48f2diMH2JByN2OmgGw"),
+                Triple("YouTube", t.social_official_channel, "https://www.youtube.com/channel/UCB_b48f2diMH2JByN2OmgGw"),
             )
             Column {
                 links.forEachIndexed { idx, (label, sub, url) ->
@@ -299,6 +386,48 @@ fun SettingsScreen(
             }
         }
 
+        // Sections visibility
+        SectionCard(title = t.pref_sections_title, icon = Icons.Default.ViewModule, sectionBg, sectionBorder, cardShape, theme.primaryColor()) {
+            Column {
+                Text(t.pref_sections_desc, fontSize = 10.sp, color = theme.mutedColor(), modifier = Modifier.padding(bottom = 10.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(t.pref_show_docs_section, fontSize = 12.sp, color = theme.textColor())
+                    Switch(
+                        checked = docsSectionEnabled,
+                        onCheckedChange = onToggleDocsSection,
+                        colors = SwitchDefaults.colors(
+                            checkedThumbColor = Color.White,
+                            checkedTrackColor = theme.primaryColor(),
+                            uncheckedThumbColor = Color.White,
+                            uncheckedTrackColor = Color(0xFF374151)
+                        )
+                    )
+                }
+                Spacer(Modifier.height(10.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(t.pref_show_games_store_section, fontSize = 12.sp, color = theme.textColor())
+                    Switch(
+                        checked = gamesStoreSectionEnabled,
+                        onCheckedChange = onToggleGamesStoreSection,
+                        colors = SwitchDefaults.colors(
+                            checkedThumbColor = Color.White,
+                            checkedTrackColor = theme.primaryColor(),
+                            uncheckedThumbColor = Color.White,
+                            uncheckedTrackColor = Color(0xFF374151)
+                        )
+                    )
+                }
+            }
+        }
+
         // About / Updates
         SectionCard(title = t.settings_info, icon = Icons.Default.Info, sectionBg, sectionBorder, cardShape, theme.primaryColor()) {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -317,7 +446,7 @@ fun SettingsScreen(
                             Icon(Icons.Default.Code, null, tint = theme.mutedColor(), modifier = Modifier.size(18.dp))
                         }
                         Column {
-                            Text("Source Code", fontSize = 13.sp, fontWeight = FontWeight.Medium, color = theme.textColor())
+                            Text(t.settings_source_code, fontSize = 13.sp, fontWeight = FontWeight.Medium, color = theme.textColor())
                             Text("HackerOS-App", fontSize = 11.sp, color = theme.mutedColor())
                         }
                     }
@@ -346,10 +475,10 @@ fun SettingsScreen(
                     }
                     // Status badge
                     when (updateStatus) {
-                        MainViewModel.UpdateStatus.CHECKING -> StatusBadge("SCANNING...", Color(0xFF10B981))
-                        MainViewModel.UpdateStatus.UP_TO_DATE -> StatusBadge("LATEST", Color(0xFF22C55E))
-                        MainViewModel.UpdateStatus.UPDATE_AVAILABLE -> StatusBadge("OUTDATED", Color(0xFFF59E0B))
-                        MainViewModel.UpdateStatus.ERROR -> StatusBadge("ERROR", Color(0xFFEF4444))
+                        MainViewModel.UpdateStatus.CHECKING -> StatusBadge(t.status_scanning, Color(0xFF10B981))
+                        MainViewModel.UpdateStatus.UP_TO_DATE -> StatusBadge(t.status_latest, Color(0xFF22C55E))
+                        MainViewModel.UpdateStatus.UPDATE_AVAILABLE -> StatusBadge(t.status_outdated, Color(0xFFF59E0B))
+                        MainViewModel.UpdateStatus.ERROR -> StatusBadge(t.status_error, Color(0xFFEF4444))
                         else -> {}
                     }
                 }
@@ -394,12 +523,24 @@ fun SettingsScreen(
         }
 
         Text(
-            text = "Designed for Hackers",
+            text = t.settings_tagline,
             fontSize = 9.sp,
             fontFamily = FontFamily.Monospace,
             color = theme.mutedColor().copy(alpha = 0.3f),
             letterSpacing = 3.sp,
             modifier = Modifier.align(Alignment.CenterHorizontally)
+        )
+    }
+
+    if (showCustomThemeDialog) {
+        com.hackeros.app.ui.components.CustomThemeDialog(
+            initial = customThemeColors,
+            translations = t,
+            onDismiss = { showCustomThemeDialog = false },
+            onSave = { primary, background, card ->
+                onSaveCustomTheme(primary, background, card)
+                showCustomThemeDialog = false
+            }
         )
     }
 }
@@ -424,7 +565,7 @@ private fun UpdateFlowSection(
             ) {
                 Icon(Icons.Default.Download, null, tint = theme.backgroundColor(), modifier = Modifier.size(18.dp))
                 Spacer(Modifier.width(8.dp))
-                Text("UPDATE TO v$remoteVersion", fontWeight = FontWeight.Bold, fontSize = 12.sp, color = theme.backgroundColor())
+                Text("${t.update_button_prefix} v$remoteVersion", fontWeight = FontWeight.Bold, fontSize = 12.sp, color = theme.backgroundColor())
             }
         }
         is MainViewModel.ApkUpdateState.Downloading -> {
