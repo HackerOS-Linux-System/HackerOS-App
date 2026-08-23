@@ -4,7 +4,12 @@ import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.hackeros.app.data.cache.OfflineCacheCodec
+import com.hackeros.app.data.docs.DocContentParser
+import com.hackeros.app.data.docs.DocPage
+import com.hackeros.app.data.games.CommunityGame
+import com.hackeros.app.data.games.GamesStoreParser
 import com.hackeros.app.data.model.AppScreen
+import com.hackeros.app.data.model.AppTheme
 import com.hackeros.app.data.model.GalleryImage
 import com.hackeros.app.data.model.Language
 import com.hackeros.app.data.model.ReleaseInfo
@@ -37,6 +42,9 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     // --- Theme & Language ---
     private val _currentTheme = MutableStateFlow(ThemeId.MONOCHROME)
     val currentTheme: StateFlow<ThemeId> = _currentTheme.asStateFlow()
+
+    private val _customThemeColors = MutableStateFlow<AppTheme?>(null)
+    val customThemeColors: StateFlow<AppTheme?> = _customThemeColors.asStateFlow()
 
     private val _currentLanguage = MutableStateFlow(Language.PL)
     val currentLanguage: StateFlow<Language> = _currentLanguage.asStateFlow()
@@ -107,17 +115,61 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     private val _apkUpdateState = MutableStateFlow<ApkUpdateState>(ApkUpdateState.Idle)
     val apkUpdateState: StateFlow<ApkUpdateState> = _apkUpdateState.asStateFlow()
 
+    // --- Section visibility (Settings toggles) ---
+    private val _docsSectionEnabled = MutableStateFlow(true)
+    val docsSectionEnabled: StateFlow<Boolean> = _docsSectionEnabled.asStateFlow()
+
+    private val _gamesStoreSectionEnabled = MutableStateFlow(true)
+    val gamesStoreSectionEnabled: StateFlow<Boolean> = _gamesStoreSectionEnabled.asStateFlow()
+
+    // --- Documentation (native, parsed from the website's own data file - no WebView) ---
+    private val _docPage = MutableStateFlow<DocPage?>(null)
+    val docPage: StateFlow<DocPage?> = _docPage.asStateFlow()
+
+    private val _docLoading = MutableStateFlow(true)
+    val docLoading: StateFlow<Boolean> = _docLoading.asStateFlow()
+
+    private val _docError = MutableStateFlow(false)
+    val docError: StateFlow<Boolean> = _docError.asStateFlow()
+
+    private val _docFromCache = MutableStateFlow(false)
+    val docFromCache: StateFlow<Boolean> = _docFromCache.asStateFlow()
+
+    // --- Games Store ---
+    private val _gamesStore = MutableStateFlow<List<CommunityGame>>(emptyList())
+    val gamesStore: StateFlow<List<CommunityGame>> = _gamesStore.asStateFlow()
+
+    private val _gamesStoreLoading = MutableStateFlow(true)
+    val gamesStoreLoading: StateFlow<Boolean> = _gamesStoreLoading.asStateFlow()
+
+    private val _gamesStoreError = MutableStateFlow(false)
+    val gamesStoreError: StateFlow<Boolean> = _gamesStoreError.asStateFlow()
+
+    private val _gamesStoreFromCache = MutableStateFlow(false)
+    val gamesStoreFromCache: StateFlow<Boolean> = _gamesStoreFromCache.asStateFlow()
+
+    // Per-game install/download state, keyed by game id, mirroring ApkUpdateState.
+    private val _gameInstallStates = MutableStateFlow<Map<String, ApkUpdateState>>(emptyMap())
+    val gameInstallStates: StateFlow<Map<String, ApkUpdateState>> = _gameInstallStates.asStateFlow()
+
     init {
         loadPreferencesThenFetch()
         fetchGallery()
+        fetchDocs()
+        fetchGamesStore()
     }
 
     private fun loadPreferencesThenFetch() {
         viewModelScope.launch {
             _currentTheme.value = prefs.themeFlow.first()
+            _customThemeColors.value = prefs.customThemeColorsFlow.first()?.let {
+                AppTheme(id = ThemeId.CUSTOM, primary = it.primary, background = it.background, card = it.card)
+            }
             _currentLanguage.value = prefs.languageFlow.first()
             _notificationsEnabled.value = prefs.notificationsFlow.first()
             _watchedEditions.value = prefs.watchedEditionsFlow.first()
+            _docsSectionEnabled.value = prefs.docsSectionEnabledFlow.first()
+            _gamesStoreSectionEnabled.value = prefs.gamesStoreSectionEnabledFlow.first()
             // Keep the background worker in sync with the saved preference - important after
             // an app reinstall/update, where WorkManager's own schedule may have been reset.
             if (_notificationsEnabled.value) {
@@ -158,13 +210,27 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         viewModelScope.launch { prefs.saveTheme(themeId) }
     }
 
+    /** Saves the user's custom theme colors and immediately switches to it. */
+    fun saveCustomTheme(primary: Long, background: Long, card: Long) {
+        val theme = AppTheme(id = ThemeId.CUSTOM, primary = primary, background = background, card = card)
+        _customThemeColors.value = theme
+        _currentTheme.value = ThemeId.CUSTOM
+        viewModelScope.launch {
+            prefs.saveCustomThemeColors(primary, background, card)
+            prefs.saveTheme(ThemeId.CUSTOM)
+        }
+    }
+
     fun setLanguage(lang: Language) {
         val changed = _currentLanguage.value != lang
         _currentLanguage.value = lang
         viewModelScope.launch { prefs.saveLanguage(lang) }
         // Releases are localized (e.g. Polish changelog text vs. English), so re-fetch/re-parse
         // them whenever the language changes so the releases screen updates immediately.
-        if (changed) fetchReleases()
+        if (changed) {
+            fetchReleases()
+            fetchDocs()
+        }
     }
 
     /**
@@ -196,6 +262,19 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     fun resetEditionFilterToAll() {
         _watchedEditions.value = null
         viewModelScope.launch { prefs.saveWatchedEditions(null) }
+    }
+
+    fun setDocsSectionEnabled(enabled: Boolean) {
+        _docsSectionEnabled.value = enabled
+        viewModelScope.launch { prefs.saveDocsSectionEnabled(enabled) }
+        // If the user is currently looking at a section they just hid, bounce back to Releases.
+        if (!enabled && _currentScreen.value == AppScreen.DOCS) _currentScreen.value = AppScreen.RELEASES
+    }
+
+    fun setGamesStoreSectionEnabled(enabled: Boolean) {
+        _gamesStoreSectionEnabled.value = enabled
+        viewModelScope.launch { prefs.saveGamesStoreSectionEnabled(enabled) }
+        if (!enabled && _currentScreen.value == AppScreen.GAMES_STORE) _currentScreen.value = AppScreen.RELEASES
     }
 
     fun fetchReleases() {
@@ -386,5 +465,127 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     fun resetApkUpdateState() {
         _apkUpdateState.value = ApkUpdateState.Idle
+    }
+
+    // --- Documentation (native parsing, no WebView) -----------------------------------------
+
+    fun fetchDocs() {
+        viewModelScope.launch {
+            _docLoading.value = true
+            _docError.value = false
+            try {
+                val js = withContext(Dispatchers.IO) {
+                    URL("${Constants.DOCUMENTATION_JS_URL}?t=${System.currentTimeMillis()}").readText()
+                }
+                val page = DocContentParser.buildPage(js, _currentLanguage.value.code)
+                    ?: throw IllegalStateException("Could not parse documentation")
+                _docPage.value = page
+                _docFromCache.value = false
+                prefs.saveCachedDocJs(js)
+            } catch (e: Exception) {
+                val cachedJs = prefs.cachedDocJsFlow.first()
+                val cachedPage = cachedJs?.let { DocContentParser.buildPage(it, _currentLanguage.value.code) }
+                if (cachedPage != null) {
+                    _docPage.value = cachedPage
+                    _docFromCache.value = true
+                    _docError.value = false
+                } else {
+                    _docError.value = true
+                    _docFromCache.value = false
+                }
+            } finally {
+                _docLoading.value = false
+            }
+        }
+    }
+
+    // --- Games Store -------------------------------------------------------------------------
+
+    fun fetchGamesStore() {
+        viewModelScope.launch {
+            _gamesStoreLoading.value = true
+            _gamesStoreError.value = false
+            try {
+                val json = withContext(Dispatchers.IO) {
+                    URL("${Constants.GAMES_STORE_JSON_URL}?t=${System.currentTimeMillis()}").readText()
+                }
+                val games = GamesStoreParser.parse(json)
+                if (games.isEmpty() && json.isBlank()) throw IllegalStateException("Empty catalog")
+                _gamesStore.value = games
+                _gamesStoreFromCache.value = false
+                prefs.saveCachedGamesStoreJson(json)
+            } catch (e: Exception) {
+                val cachedJson = prefs.cachedGamesStoreJsonFlow.first()
+                val cachedGames = cachedJson?.let { GamesStoreParser.parse(it) } ?: emptyList()
+                if (cachedGames.isNotEmpty()) {
+                    _gamesStore.value = cachedGames
+                    _gamesStoreFromCache.value = true
+                    _gamesStoreError.value = false
+                } else {
+                    _gamesStoreError.value = true
+                    _gamesStoreFromCache.value = false
+                }
+            } finally {
+                _gamesStoreLoading.value = false
+            }
+        }
+    }
+
+    fun downloadGame(game: CommunityGame) {
+        viewModelScope.launch {
+            _gameInstallStates.value = _gameInstallStates.value + (game.id to ApkUpdateState.Downloading(0))
+            val file = ApkUpdater.downloadToFile(
+                context = getApplication(),
+                url = game.downloadUrl,
+                subDir = "games",
+                fileName = "${game.id}-${game.version}.apk"
+            ) { percent ->
+                _gameInstallStates.value = _gameInstallStates.value + (game.id to ApkUpdateState.Downloading(percent))
+            }
+
+            if (file == null) {
+                _gameInstallStates.value = _gameInstallStates.value + (game.id to ApkUpdateState.Error)
+                return@launch
+            }
+
+            _gameInstallStates.value = _gameInstallStates.value + (game.id to ApkUpdateState.Verifying)
+            val result = withContext(Dispatchers.IO) { ApkUpdater.verifyChecksum(file, game.checksumUrl) }
+            val newState = when (result) {
+                is ApkUpdater.VerifyResult.Verified ->
+                    ApkUpdateState.ReadyToInstall(file, verified = true, checksumAvailable = true)
+                is ApkUpdater.VerifyResult.ChecksumUnavailable ->
+                    ApkUpdateState.ReadyToInstall(file, verified = false, checksumAvailable = false)
+                is ApkUpdater.VerifyResult.Mismatch -> {
+                    file.delete()
+                    ApkUpdateState.Error
+                }
+            }
+            _gameInstallStates.value = _gameInstallStates.value + (game.id to newState)
+        }
+    }
+
+    fun installDownloadedGame(gameId: String) {
+        val state = _gameInstallStates.value[gameId]
+        if (state is ApkUpdateState.ReadyToInstall) {
+            ApkUpdater.install(getApplication(), state.file)
+        }
+    }
+
+    fun isGameInstalled(packageName: String?): Boolean {
+        if (packageName.isNullOrBlank()) return false
+        return try {
+            getApplication<Application>().packageManager.getPackageInfo(packageName, 0)
+            true
+        } catch (_: Exception) {
+            false
+        }
+    }
+
+    fun openInstalledGame(packageName: String?) {
+        if (packageName.isNullOrBlank()) return
+        val app: Application = getApplication()
+        val intent = app.packageManager.getLaunchIntentForPackage(packageName) ?: return
+        intent.addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
+        app.startActivity(intent)
     }
 }
