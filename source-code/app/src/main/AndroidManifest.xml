@@ -11,6 +11,18 @@
     <uses-permission android:name="android.permission.SET_WALLPAPER" />
     <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
 
+    <!-- Games Store: lets the app check whether a community game's package is installed and
+         launch it directly, which on Android 11+ requires an explicit <queries> declaration
+         for package-visibility - without this, getPackageInfo()/getLaunchIntentForPackage()
+         for an arbitrary (not-statically-known) package name would silently act as "not
+         installed" even when it is. -->
+    <queries>
+        <intent>
+            <action android:name="android.intent.action.MAIN" />
+            <category android:name="android.intent.category.LAUNCHER" />
+        </intent>
+    </queries>
+
     <application
         android:allowBackup="true"
         android:icon="@mipmap/ic_launcher"
