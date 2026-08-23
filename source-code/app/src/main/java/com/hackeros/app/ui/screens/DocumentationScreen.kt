@@ -1,29 +1,19 @@
 package com.hackeros.app.ui.screens
 
-import android.annotation.SuppressLint
+import android.content.ClipData
+import android.content.ClipboardManager
 import android.content.Context
-import android.graphics.Color as AndroidColor
-import android.net.ConnectivityManager
-import android.net.NetworkCapabilities
-import android.view.ViewGroup
-import android.webkit.WebResourceError
-import android.webkit.WebResourceRequest
-import android.webkit.WebSettings
-import android.webkit.WebView
-import android.webkit.WebViewClient
+import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.KeyboardActions
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.CloudOff
-import androidx.compose.material.icons.filled.Info
-import androidx.compose.material.icons.filled.Refresh
-import androidx.compose.material.icons.filled.Search
-import androidx.compose.material.icons.filled.WifiOff
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -33,12 +23,13 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.viewinterop.AndroidView
-import com.hackeros.app.Constants
+import com.hackeros.app.data.docs.DocBlock
+import com.hackeros.app.data.docs.DocPage
+import com.hackeros.app.data.docs.DocTab
 import com.hackeros.app.data.model.Language
+import com.hackeros.app.ui.components.InlineHtmlText
 import com.hackeros.app.ui.theme.LocalAppTheme
 import com.hackeros.app.ui.theme.backgroundColor
 import com.hackeros.app.ui.theme.cardColor
@@ -46,70 +37,31 @@ import com.hackeros.app.ui.theme.mutedColor
 import com.hackeros.app.ui.theme.primaryColor
 import com.hackeros.app.ui.theme.textColor
 import com.hackeros.app.utils.Translations
-import org.json.JSONObject
 
-/**
- * Shows the official HackerOS documentation natively, in-app - i.e. embedded directly in the
- * app's own UI (with the app's header/nav chrome around it, plus a native search bar) rather
- * than handing the user off to an external browser via an Intent. Under the hood it renders the
- * exact same live page the website serves (https://.../hackeros-documentation.html), which keeps
- * the docs content always perfectly in sync with the website with zero duplicated content.
- *
- * Two extra pieces of native integration on top of the plain WebView:
- *  - The WebView's HTTP cache is configured so a page visited once while online can still be
- *    re-opened (cache-only) while offline, instead of showing a blank error.
- *  - A native search field sits above the WebView and drives the site's own client-side search
- *    engine (`translations/doc-engine.js`'s `doSearch()` / `#search-input`) via `evaluateJavascript`,
- *    rather than reimplementing search - it also keeps the loaded page's language in sync with
- *    the app's language via the site's own `window.__hackeros_applyLang()`.
- */
-@SuppressLint("SetJavaScriptEnabled")
 @Composable
-fun DocumentationScreen(translations: Translations, currentLanguage: Language) {
+fun DocumentationScreen(
+    docPage: DocPage?,
+    loading: Boolean,
+    error: Boolean,
+    fromCache: Boolean,
+    currentLanguage: Language,
+    translations: Translations,
+    onRetry: () -> Unit
+) {
     val theme = LocalAppTheme.current
     val t = translations
-    val context = LocalContext.current
-
-    var isLoading by remember { mutableStateOf(true) }
-    var hasError by remember { mutableStateOf(false) }
-    var webViewRef by remember { mutableStateOf<WebView?>(null) }
+    var selectedTabKey by remember { mutableStateOf<String?>(null) }
     var searchQuery by remember { mutableStateOf("") }
 
-    val isEnglishOnlySection = currentLanguage.code !in Constants.DOCUMENTATION_CONTENT_LANGUAGES
-
-    fun runSearch(query: String) {
-        val webView = webViewRef ?: return
-        val escaped = JSONObject.quote(query)
-        webView.evaluateJavascript(
-            """
-            (function() {
-                var el = document.getElementById('search-input');
-                if (el) {
-                    el.value = $escaped;
-                    el.dispatchEvent(new Event('input', {bubbles:true}));
-                } else if (window.doSearch) {
-                    window.doSearch($escaped);
-                }
-            })();
-            """.trimIndent(), null
-        )
-    }
-
-    fun syncLanguage() {
-        val webView = webViewRef ?: return
-        val langCode = JSONObject.quote(currentLanguage.code)
-        webView.evaluateJavascript(
-            """
-            (function() {
-                if (window.HackerLang && window.HackerLang.setLang) window.HackerLang.setLang($langCode);
-                if (window.__hackeros_applyLang) window.__hackeros_applyLang($langCode);
-            })();
-            """.trimIndent(), null
-        )
+    // Reset the active tab whenever a new page loads (e.g. after a language change).
+    LaunchedEffect(docPage) {
+        if (docPage != null && (selectedTabKey == null || docPage.tabs.none { it.key == selectedTabKey })) {
+            selectedTabKey = docPage.tabs.firstOrNull()?.key
+        }
     }
 
     Column(modifier = Modifier.fillMaxSize()) {
-        Column(modifier = Modifier.padding(start = 24.dp, end = 24.dp, top = 8.dp, bottom = 12.dp)) {
+        Column(modifier = Modifier.padding(start = 24.dp, end = 24.dp, top = 8.dp, bottom = 10.dp)) {
             Text(
                 text = t.header_docs,
                 fontFamily = FontFamily.Monospace,
@@ -125,153 +77,121 @@ fun DocumentationScreen(translations: Translations, currentLanguage: Language) {
             )
         }
 
-        // Native search bar, driving the site's own doc-engine.js search.
-        OutlinedTextField(
-            value = searchQuery,
-            onValueChange = {
-                searchQuery = it
-                runSearch(it)
-            },
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 20.dp)
-                .padding(bottom = 10.dp),
-            placeholder = { Text(t.doc_search_placeholder, fontSize = 13.sp, color = theme.mutedColor()) },
-            leadingIcon = { Icon(Icons.Default.Search, null, tint = theme.mutedColor(), modifier = Modifier.size(18.dp)) },
-            trailingIcon = {
-                if (searchQuery.isNotEmpty()) {
-                    IconButton(onClick = { searchQuery = ""; runSearch("") }) {
-                        Icon(Icons.Default.Close, t.doc_search_clear, tint = theme.mutedColor(), modifier = Modifier.size(16.dp))
+        when {
+            loading -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                CircularProgressIndicator(color = theme.primaryColor())
+            }
+            error || docPage == null -> Box(
+                Modifier.fillMaxSize().padding(32.dp), contentAlignment = Alignment.Center
+            ) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Icon(Icons.Default.WifiOff, null, tint = Color(0xFFEF4444), modifier = Modifier.size(40.dp))
+                    Spacer(Modifier.height(12.dp))
+                    Text(t.error_signal, color = Color(0xFFEF4444), fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                    Spacer(Modifier.height(6.dp))
+                    Text(t.error_network, color = theme.mutedColor(), fontSize = 12.sp)
+                    Spacer(Modifier.height(20.dp))
+                    Button(onClick = onRetry, colors = ButtonDefaults.buttonColors(containerColor = theme.primaryColor())) {
+                        Icon(Icons.Default.Refresh, null, tint = theme.backgroundColor(), modifier = Modifier.size(16.dp))
+                        Spacer(Modifier.width(8.dp))
+                        Text(t.retry, fontWeight = FontWeight.Bold, fontSize = 12.sp, color = theme.backgroundColor())
                     }
                 }
-            },
-            singleLine = true,
-            shape = RoundedCornerShape(12.dp),
-            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
-            keyboardActions = KeyboardActions(onSearch = { runSearch(searchQuery) }),
-            colors = OutlinedTextFieldDefaults.colors(
-                focusedBorderColor = theme.primaryColor(),
-                unfocusedBorderColor = Color.White.copy(alpha = 0.1f),
-                focusedTextColor = theme.textColor(),
-                unfocusedTextColor = theme.textColor()
-            )
-        )
-
-        if (isEnglishOnlySection) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 20.dp)
-                    .padding(bottom = 10.dp)
-                    .clip(RoundedCornerShape(10.dp))
-                    .background(theme.primaryColor().copy(alpha = 0.08f))
-                    .border(1.dp, theme.primaryColor().copy(alpha = 0.25f), RoundedCornerShape(10.dp))
-                    .padding(horizontal = 14.dp, vertical = 10.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                Icon(Icons.Default.Info, null, tint = theme.primaryColor(), modifier = Modifier.size(14.dp))
-                Text(t.doc_en_only_banner, fontSize = 11.sp, color = theme.primaryColor())
             }
-        }
+            else -> {
+                if (fromCache) {
+                    Box(Modifier.padding(horizontal = 20.dp, vertical = 6.dp)) {
+                        OfflineBanner(text = t.offline_cached_banner, primaryColor = theme.primaryColor())
+                    }
+                }
+                if (docPage.isEnglishFallback) {
+                    Box(Modifier.padding(horizontal = 20.dp, vertical = 6.dp)) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(10.dp))
+                                .background(theme.primaryColor().copy(alpha = 0.08f))
+                                .border(1.dp, theme.primaryColor().copy(alpha = 0.25f), RoundedCornerShape(10.dp))
+                                .padding(horizontal = 14.dp, vertical = 10.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            Icon(Icons.Default.Info, null, tint = theme.primaryColor(), modifier = Modifier.size(14.dp))
+                            Text(t.doc_en_only_banner, fontSize = 11.sp, color = theme.primaryColor())
+                        }
+                    }
+                }
 
-        Box(modifier = Modifier.fillMaxSize().padding(bottom = 90.dp)) {
-            if (!hasError) {
-                AndroidView(
-                    modifier = Modifier.fillMaxSize(),
-                    factory = { ctx ->
-                        WebView(ctx).apply {
-                            layoutParams = ViewGroup.LayoutParams(
-                                ViewGroup.LayoutParams.MATCH_PARENT,
-                                ViewGroup.LayoutParams.MATCH_PARENT
-                            )
-                            setBackgroundColor(AndroidColor.TRANSPARENT)
-                            settings.javaScriptEnabled = true
-                            settings.domStorageEnabled = true
-                            // Enable the WebView's own HTTP cache so a page visited once while
-                            // online remains available (cache-only) when there's no connection.
-                            settings.cacheMode = if (isNetworkAvailable(ctx))
-                                WebSettings.LOAD_DEFAULT else WebSettings.LOAD_CACHE_ELSE_NETWORK
-                            webViewClient = object : WebViewClient() {
-                                override fun onPageStarted(
-                                    view: WebView?, url: String?, favicon: android.graphics.Bitmap?
-                                ) {
-                                    isLoading = true
-                                    hasError = false
-                                }
-
-                                override fun onPageFinished(view: WebView?, url: String?) {
-                                    isLoading = false
-                                    syncLanguage()
-                                    if (searchQuery.isNotEmpty()) runSearch(searchQuery)
-                                }
-
-                                override fun onReceivedError(
-                                    view: WebView?,
-                                    request: WebResourceRequest?,
-                                    error: WebResourceError?
-                                ) {
-                                    if (request?.isForMainFrame != false) {
-                                        isLoading = false
-                                        hasError = true
-                                    }
-                                }
+                // Native search: filters the tab list by matching against tab label or any of
+                // that tab's rendered text content - the same behavior as the website's own
+                // doSearch(), just running natively instead of against a DOM.
+                OutlinedTextField(
+                    value = searchQuery,
+                    onValueChange = { searchQuery = it },
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp).padding(bottom = 8.dp),
+                    placeholder = { Text(t.doc_tab_search_placeholder, fontSize = 13.sp, color = theme.mutedColor()) },
+                    leadingIcon = { Icon(Icons.Default.Search, null, tint = theme.mutedColor(), modifier = Modifier.size(18.dp)) },
+                    trailingIcon = {
+                        if (searchQuery.isNotEmpty()) {
+                            IconButton(onClick = { searchQuery = "" }) {
+                                Icon(Icons.Default.Close, null, tint = theme.mutedColor(), modifier = Modifier.size(16.dp))
                             }
-                            loadUrl(Constants.DOCUMENTATION_URL)
-                            webViewRef = this
                         }
                     },
-                    update = { webView ->
-                        webViewRef = webView
-                    }
+                    singleLine = true,
+                    shape = RoundedCornerShape(12.dp),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = theme.primaryColor(),
+                        unfocusedBorderColor = Color.White.copy(alpha = 0.1f)
+                    )
                 )
-            }
 
-            if (isLoading && !hasError) {
-                Box(
-                    modifier = Modifier.fillMaxSize().background(theme.backgroundColor()),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        CircularProgressIndicator(color = theme.primaryColor(), modifier = Modifier.size(40.dp))
-                        Spacer(Modifier.height(14.dp))
-                        Text(
-                            text = t.decrypting,
-                            fontSize = 11.sp,
-                            fontFamily = FontFamily.Monospace,
-                            color = theme.primaryColor()
-                        )
+                val filteredTabs = if (searchQuery.isBlank()) docPage.tabs else {
+                    val q = searchQuery.trim().lowercase()
+                    docPage.tabs.filter { tab ->
+                        tab.label.lowercase().contains(q) || blockTextOf(tab).lowercase().contains(q)
                     }
                 }
-            }
 
-            if (hasError) {
-                Box(
-                    modifier = Modifier.fillMaxSize().padding(32.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Icon(
-                            Icons.Default.WifiOff, null,
-                            tint = Color(0xFFEF4444),
-                            modifier = Modifier.size(40.dp)
-                        )
-                        Spacer(Modifier.height(12.dp))
-                        Text(t.error_signal, color = Color(0xFFEF4444), fontWeight = FontWeight.Bold, fontSize = 14.sp)
-                        Spacer(Modifier.height(6.dp))
-                        Text(t.error_network, color = theme.mutedColor(), fontSize = 12.sp)
-                        Spacer(Modifier.height(20.dp))
-                        Button(
-                            onClick = {
-                                hasError = false
-                                isLoading = true
-                                webViewRef?.loadUrl(Constants.DOCUMENTATION_URL)
-                            },
-                            colors = ButtonDefaults.buttonColors(containerColor = theme.primaryColor())
+                if (searchQuery.isNotBlank() && filteredTabs.isEmpty()) {
+                    Box(Modifier.fillMaxWidth().padding(24.dp), contentAlignment = Alignment.Center) {
+                        Text(t.doc_no_search_results, color = theme.mutedColor(), fontSize = 12.sp)
+                    }
+                } else {
+                    // Tab menu
+                    LazyRow(
+                        contentPadding = PaddingValues(horizontal = 20.dp),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        modifier = Modifier.padding(bottom = 12.dp)
+                    ) {
+                        items(filteredTabs, key = { it.key }) { tab ->
+                            val active = tab.key == selectedTabKey
+                            Box(
+                                modifier = Modifier
+                                    .clip(RoundedCornerShape(20.dp))
+                                    .background(if (active) theme.primaryColor() else Color.White.copy(alpha = 0.06f))
+                                    .clickable { selectedTabKey = tab.key }
+                                    .padding(horizontal = 16.dp, vertical = 8.dp)
+                            ) {
+                                Text(
+                                    tab.label,
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = if (active) theme.backgroundColor() else theme.mutedColor()
+                                )
+                            }
+                        }
+                    }
+
+                    val activeTab = filteredTabs.find { it.key == selectedTabKey } ?: filteredTabs.firstOrNull()
+                    if (activeTab != null) {
+                        LazyColumn(
+                            contentPadding = PaddingValues(start = 20.dp, end = 20.dp, bottom = 100.dp),
+                            verticalArrangement = Arrangement.spacedBy(10.dp)
                         ) {
-                            Icon(Icons.Default.Refresh, null, tint = theme.backgroundColor(), modifier = Modifier.size(16.dp))
-                            Spacer(Modifier.width(8.dp))
-                            Text(t.retry, fontWeight = FontWeight.Bold, fontSize = 12.sp, color = theme.backgroundColor())
+                            items(activeTab.blocks) { block ->
+                                DocBlockView(block, theme, t)
+                            }
                         }
                     }
                 }
@@ -280,9 +200,161 @@ fun DocumentationScreen(translations: Translations, currentLanguage: Language) {
     }
 }
 
-private fun isNetworkAvailable(context: Context): Boolean {
-    val cm = context.getSystemService(Context.CONNECTIVITY_SERVICE) as? ConnectivityManager ?: return true
-    val network = cm.activeNetwork ?: return false
-    val capabilities = cm.getNetworkCapabilities(network) ?: return false
-    return capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
+private fun blockTextOf(tab: DocTab): String = buildString {
+    tab.blocks.forEach { b ->
+        when (b) {
+            is DocBlock.Heading2 -> append(b.text).append(' ')
+            is DocBlock.Heading3 -> append(b.text).append(' ')
+            is DocBlock.Heading4 -> append(b.text).append(' ')
+            is DocBlock.Paragraph -> append(b.html).append(' ')
+            is DocBlock.BulletList -> b.itemsHtml.forEach { append(it).append(' ') }
+            is DocBlock.NumberedList -> b.itemsHtml.forEach { append(it).append(' ') }
+            is DocBlock.Command -> append(b.text).append(' ')
+            is DocBlock.CodeSample -> append(b.text).append(' ')
+            is DocBlock.LinkLine -> append(b.labelHtml).append(' ')
+            is DocBlock.ToolsTable -> b.rows.forEach { append(it.first).append(' ').append(it.second).append(' ') }
+            DocBlock.Divider -> {}
+        }
+    }
+}
+
+@Composable
+private fun DocBlockView(block: DocBlock, theme: com.hackeros.app.data.model.AppTheme, translations: Translations) {
+    when (block) {
+        is DocBlock.Heading2 -> Text(
+            block.text, fontSize = 19.sp, fontWeight = FontWeight.Bold,
+            fontFamily = FontFamily.Monospace, color = Color.White,
+            modifier = Modifier.padding(top = 6.dp)
+        )
+        is DocBlock.Heading3 -> Text(
+            block.text, fontSize = 16.sp, fontWeight = FontWeight.Bold,
+            color = theme.primaryColor(), modifier = Modifier.padding(top = 4.dp)
+        )
+        is DocBlock.Heading4 -> Text(
+            block.text, fontSize = 14.sp, fontWeight = FontWeight.SemiBold,
+            color = theme.textColor(), modifier = Modifier.padding(top = 2.dp)
+        )
+        is DocBlock.Paragraph -> if (block.html.isNotBlank()) {
+            InlineHtmlText(
+                html = block.html, color = theme.textColor(), fontSize = 13.sp, lineHeight = 19.sp,
+                linkColor = theme.primaryColor(), codeColor = theme.primaryColor()
+            )
+        }
+        is DocBlock.BulletList -> Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            block.itemsHtml.forEach { item ->
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text("•", color = theme.primaryColor(), fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                    InlineHtmlText(
+                        html = item, color = theme.textColor(), fontSize = 13.sp, lineHeight = 18.sp,
+                        linkColor = theme.primaryColor(), codeColor = theme.primaryColor(),
+                        modifier = Modifier.weight(1f)
+                    )
+                }
+            }
+        }
+        is DocBlock.NumberedList -> Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            block.itemsHtml.forEachIndexed { index, item ->
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text("${index + 1}.", color = theme.primaryColor(), fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                    InlineHtmlText(
+                        html = item, color = theme.textColor(), fontSize = 13.sp, lineHeight = 18.sp,
+                        linkColor = theme.primaryColor(), codeColor = theme.primaryColor(),
+                        modifier = Modifier.weight(1f)
+                    )
+                }
+            }
+        }
+        is DocBlock.Command -> CommandBlockView(block.text, theme, translations)
+        is DocBlock.CodeSample -> CodeSampleView(block.text, theme, translations)
+        is DocBlock.LinkLine -> LinkLineView(block.labelHtml, block.url, theme)
+        is DocBlock.ToolsTable -> ToolsTableView(block.rows, theme)
+        DocBlock.Divider -> HorizontalDivider(color = Color.White.copy(alpha = 0.06f))
+    }
+}
+
+@Composable
+private fun CommandBlockView(command: String, theme: com.hackeros.app.data.model.AppTheme, translations: Translations) {
+    val context = LocalContext.current
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(10.dp))
+            .background(theme.cardColor())
+            .border(1.dp, Color.White.copy(alpha = 0.06f), RoundedCornerShape(10.dp))
+            .padding(12.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(
+            command, fontFamily = FontFamily.Monospace, fontSize = 12.sp,
+            color = theme.primaryColor(), modifier = Modifier.weight(1f)
+        )
+        IconButton(onClick = { copyToClipboard(context, command, translations) }, modifier = Modifier.size(28.dp)) {
+            Icon(Icons.Default.ContentCopy, null, tint = theme.mutedColor(), modifier = Modifier.size(15.dp))
+        }
+    }
+}
+
+@Composable
+private fun CodeSampleView(code: String, theme: com.hackeros.app.data.model.AppTheme, translations: Translations) {
+    val context = LocalContext.current
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(10.dp))
+            .background(theme.cardColor())
+            .border(1.dp, Color.White.copy(alpha = 0.06f), RoundedCornerShape(10.dp))
+            .padding(12.dp)
+    ) {
+        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+            IconButton(onClick = { copyToClipboard(context, code, translations) }, modifier = Modifier.size(24.dp)) {
+                Icon(Icons.Default.ContentCopy, null, tint = theme.mutedColor(), modifier = Modifier.size(14.dp))
+            }
+        }
+        Text(code, fontFamily = FontFamily.Monospace, fontSize = 11.sp, color = theme.textColor(), lineHeight = 16.sp)
+    }
+}
+
+@Composable
+private fun LinkLineView(labelHtml: String, url: String, theme: com.hackeros.app.data.model.AppTheme) {
+    val uriHandler = androidx.compose.ui.platform.LocalUriHandler.current
+    Row(
+        modifier = Modifier
+            .clickable { try { uriHandler.openUri(url) } catch (_: Exception) {} }
+            .padding(vertical = 2.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(6.dp)
+    ) {
+        Icon(Icons.Default.OpenInNew, null, tint = theme.primaryColor(), modifier = Modifier.size(13.dp))
+        InlineHtmlText(html = labelHtml, color = theme.primaryColor(), fontSize = 12.sp)
+    }
+}
+
+@Composable
+private fun ToolsTableView(rows: List<Triple<String, String, String>>, theme: com.hackeros.app.data.model.AppTheme) {
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        rows.forEach { (tool, desc, inst) ->
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(10.dp))
+                    .background(theme.cardColor())
+                    .border(1.dp, Color.White.copy(alpha = 0.05f), RoundedCornerShape(10.dp))
+                    .padding(12.dp)
+            ) {
+                Text(tool, fontFamily = FontFamily.Monospace, fontWeight = FontWeight.Bold,
+                    fontSize = 12.sp, color = theme.primaryColor())
+                Spacer(Modifier.height(4.dp))
+                Text(desc, fontSize = 12.sp, color = theme.textColor(), lineHeight = 16.sp)
+                Spacer(Modifier.height(4.dp))
+                Text(inst, fontSize = 10.sp, color = theme.mutedColor())
+            }
+        }
+    }
+}
+
+private fun copyToClipboard(context: Context, text: String, translations: Translations) {
+    val cm = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+    cm.setPrimaryClip(ClipData.newPlainText("command", text))
+    Toast.makeText(context, translations.toast_copied, Toast.LENGTH_SHORT).show()
 }
