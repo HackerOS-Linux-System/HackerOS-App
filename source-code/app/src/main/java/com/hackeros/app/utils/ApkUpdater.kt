@@ -34,10 +34,24 @@ object ApkUpdater {
         apkUrl: String,
         version: String,
         onProgress: (Int) -> Unit
+    ): File? = downloadToFile(context, apkUrl, "updates", "HackerOS-App-$version.apk", clearSiblingsInDir = true, onProgress)
+
+    /**
+     * Generic download used both for the app's own self-update APK ([downloadApk]) and for
+     * Games Store community game APKs ([com.hackeros.app.ui.screens.GamesStoreScreen]), so both
+     * share one download/progress/error implementation.
+     */
+    suspend fun downloadToFile(
+        context: Context,
+        url: String,
+        subDir: String,
+        fileName: String,
+        clearSiblingsInDir: Boolean = false,
+        onProgress: (Int) -> Unit
     ): File? {
         var connection: HttpURLConnection? = null
         return try {
-            connection = (URL(apkUrl).openConnection() as HttpURLConnection).apply {
+            connection = (URL(url).openConnection() as HttpURLConnection).apply {
                 connectTimeout = 15_000
                 readTimeout = 15_000
                 instanceFollowRedirects = true
@@ -46,10 +60,9 @@ object ApkUpdater {
             if (connection.responseCode !in 200..299) return null
 
             val contentLength = connection.contentLength
-            val dir = File(context.cacheDir, "updates").apply { mkdirs() }
-            // Clear any previously downloaded update APKs before writing the new one.
-            dir.listFiles()?.forEach { it.delete() }
-            val outFile = File(dir, "HackerOS-App-$version.apk")
+            val dir = File(context.cacheDir, subDir).apply { mkdirs() }
+            if (clearSiblingsInDir) dir.listFiles()?.forEach { it.delete() }
+            val outFile = File(dir, fileName)
 
             connection.inputStream.use { input ->
                 FileOutputStream(outFile).use { output ->
@@ -86,7 +99,8 @@ object ApkUpdater {
      * blocking the update - the caller surfaces this distinction to the user instead of silently
      * treating "no checksum published" the same as "verified safe".
      */
-    fun verifyChecksum(file: File, checksumUrl: String): VerifyResult {
+    fun verifyChecksum(file: File, checksumUrl: String?): VerifyResult {
+        if (checksumUrl.isNullOrBlank()) return VerifyResult.ChecksumUnavailable
         val remoteHex = try {
             val text = URL(checksumUrl).readText().trim()
             // Checksum files sometimes look like "<hash>  filename.apk" (sha256sum format);
