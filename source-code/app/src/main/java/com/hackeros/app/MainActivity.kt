@@ -41,6 +41,7 @@ class MainActivity : ComponentActivity() {
             setContent {
                 val context = LocalContext.current
                 val currentThemeId by viewModel.currentTheme.collectAsState()
+                val customThemeColors by viewModel.customThemeColors.collectAsState()
                 val currentLanguage by viewModel.currentLanguage.collectAsState()
                 val currentScreen by viewModel.currentScreen.collectAsState()
                 val releases by viewModel.releases.collectAsState()
@@ -57,8 +58,19 @@ class MainActivity : ComponentActivity() {
                 val remoteVersion by viewModel.remoteVersion.collectAsState()
                 val apkUpdateState by viewModel.apkUpdateState.collectAsState()
                 val showWhatsNew by viewModel.showWhatsNew.collectAsState()
+                val docsSectionEnabled by viewModel.docsSectionEnabled.collectAsState()
+                val gamesStoreSectionEnabled by viewModel.gamesStoreSectionEnabled.collectAsState()
+                val docPage by viewModel.docPage.collectAsState()
+                val docLoading by viewModel.docLoading.collectAsState()
+                val docError by viewModel.docError.collectAsState()
+                val docFromCache by viewModel.docFromCache.collectAsState()
+                val gamesStore by viewModel.gamesStore.collectAsState()
+                val gamesStoreLoading by viewModel.gamesStoreLoading.collectAsState()
+                val gamesStoreError by viewModel.gamesStoreError.collectAsState()
+                val gamesStoreFromCache by viewModel.gamesStoreFromCache.collectAsState()
+                val gameInstallStates by viewModel.gameInstallStates.collectAsState()
 
-                val appTheme = THEMES[currentThemeId] ?: THEMES[com.hackeros.app.data.model.ThemeId.MONOCHROME]!!
+                val appTheme = resolveTheme(currentThemeId, customThemeColors)
                 val translations = getTranslations(currentLanguage)
 
                 val notificationPermissionLauncher = rememberLauncherForActivityResult(
@@ -126,9 +138,27 @@ class MainActivity : ComponentActivity() {
                                         translations = translations,
                                         onRetry = { viewModel.fetchGallery() }
                                     )
-                                    AppScreen.DOCS -> DocumentationScreen(
+                                    AppScreen.DOCS -> if (docsSectionEnabled) DocumentationScreen(
+                                        docPage = docPage,
+                                        loading = docLoading,
+                                        error = docError,
+                                        fromCache = docFromCache,
+                                        currentLanguage = currentLanguage,
                                         translations = translations,
-                                        currentLanguage = currentLanguage
+                                        onRetry = { viewModel.fetchDocs() }
+                                    )
+                                    AppScreen.GAMES_STORE -> if (gamesStoreSectionEnabled) GamesStoreScreen(
+                                        games = gamesStore,
+                                        loading = gamesStoreLoading,
+                                        error = gamesStoreError,
+                                        fromCache = gamesStoreFromCache,
+                                        installStates = gameInstallStates,
+                                        isGameInstalled = { pkg -> viewModel.isGameInstalled(pkg) },
+                                        onDownload = { viewModel.downloadGame(it) },
+                                        onInstall = { viewModel.installDownloadedGame(it) },
+                                        onOpen = { viewModel.openInstalledGame(it) },
+                                        translations = translations,
+                                        onRetry = { viewModel.fetchGamesStore() }
                                     )
                                     AppScreen.TEAM -> TeamScreen(translations = translations)
                                     AppScreen.SETTINGS -> SettingsScreen(
@@ -157,6 +187,12 @@ class MainActivity : ComponentActivity() {
                                                                          apkUpdateState = apkUpdateState,
                                                                          onDownloadUpdate = { viewModel.downloadUpdate() },
                                                                          onInstallUpdate = { viewModel.installDownloadedUpdate() },
+                                                                         docsSectionEnabled = docsSectionEnabled,
+                                                                         onToggleDocsSection = { viewModel.setDocsSectionEnabled(it) },
+                                                                         gamesStoreSectionEnabled = gamesStoreSectionEnabled,
+                                                                         onToggleGamesStoreSection = { viewModel.setGamesStoreSectionEnabled(it) },
+                                                                         customThemeColors = customThemeColors,
+                                                                         onSaveCustomTheme = { p, b, c -> viewModel.saveCustomTheme(p, b, c) },
                                                                          translations = translations
                                     )
                                 }
@@ -167,7 +203,9 @@ class MainActivity : ComponentActivity() {
                             HackerOSNavBar(
                                 currentScreen = currentScreen,
                                 onScreenChange = { viewModel.setScreen(it) },
-                                           translations = translations
+                                           translations = translations,
+                                           docsEnabled = docsSectionEnabled,
+                                           gamesStoreEnabled = gamesStoreSectionEnabled
                             )
                         }
 
