@@ -171,7 +171,7 @@ fun TeamScreen(translations: Translations) {
                     modifier = Modifier.size(28.dp).padding(top = 2.dp)
                 )
                 Text(
-                    text = "HackerOS is a community-driven project dedicated to ethical hacking and cybersecurity enthusiasts.",
+                    text = t.team_description,
                     fontSize = 12.sp,
                     fontFamily = FontFamily.Monospace,
                     color = theme.mutedColor(),
