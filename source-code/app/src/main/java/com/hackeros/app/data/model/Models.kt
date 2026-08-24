@@ -31,7 +31,7 @@ data class GalleryImage(
 )
 
 enum class AppScreen {
-    RELEASES, WALLPAPERS, GALLERY, DOCS, TEAM, SETTINGS
+    RELEASES, WALLPAPERS, GALLERY, DOCS, GAMES_STORE, TEAM, SETTINGS
 }
 
 enum class ThemeId(val themeName: String) {
@@ -44,7 +44,16 @@ enum class ThemeId(val themeName: String) {
     SUNSET("Solar Flare"),
     MATRIX("The Construct"),
     CRIMSON("Red Alert"),
-    ROYAL("Luxury Gold")
+    ROYAL("Luxury Gold"),
+    // New in v0.6.
+    VIOLET("Ultraviolet"),
+    TEAL("Cool Mint"),
+    ROSE("Blackout Rose"),
+    STEEL("Steel Blue"),
+    // A user-defined theme built from their own chosen colors (see CustomThemeDialog). Its
+    // actual colors live in PreferencesRepository, not in the static THEMES map, since they're
+    // per-user data rather than a fixed built-in palette.
+    CUSTOM("Custom")
 }
 
 enum class Language(val code: String, val displayName: String, val flag: String) {
