@@ -14,7 +14,7 @@ package com.hackeros.app.data.docs
  *    fixed up (`\'` -> `'`, unescaped/escaped `"` -> `\"`).
  *  - Already-double-quoted strings and already-quoted keys pass through unchanged (aside from
  *    the same escape normalization), so strict-JSON input is unaffected.
- *  - `//` line comments and `/* ... *‍/` block comments outside of strings are stripped (the
+ *  - `//` line comments and star-style block comments outside of strings are stripped (the
  *    source file ends with a `//` comment).
  *
  * This is a single-pass, string-aware tokenizer - not a full JS parser - so it does not support
