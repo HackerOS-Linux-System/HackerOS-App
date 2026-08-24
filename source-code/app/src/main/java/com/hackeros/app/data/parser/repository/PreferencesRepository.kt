@@ -5,6 +5,7 @@ import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.core.stringSetPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
@@ -38,6 +39,23 @@ class PreferencesRepository(private val context: Context) {
         // Tracks which app version the "What's new" dialog was last shown for, so it only
         // appears once per update (not on every launch).
         val LAST_SEEN_APP_VERSION_KEY = stringPreferencesKey("hackeros_last_seen_app_version")
+
+        // Whether the Documentation / Games Store sections are shown at all (both default on).
+        val DOCS_SECTION_ENABLED_KEY = booleanPreferencesKey("hackeros_docs_section_enabled")
+        val GAMES_STORE_SECTION_ENABLED_KEY = booleanPreferencesKey("hackeros_games_store_section_enabled")
+
+        // Offline cache for the Games Store catalog, same pattern as releases/gallery.
+        val CACHED_GAMES_STORE_JSON_KEY = stringPreferencesKey("hackeros_cached_games_store_json")
+
+        // Offline cache for the raw documentation JS source, so a previously-loaded page can
+        // still be parsed and shown fully offline.
+        val CACHED_DOC_JS_KEY = stringPreferencesKey("hackeros_cached_doc_js")
+
+        // User-defined custom theme colors (v0.6). Stored as ARGB Long hex values, same
+        // representation AppTheme itself uses internally.
+        val CUSTOM_THEME_PRIMARY_KEY = longPreferencesKey("hackeros_custom_theme_primary")
+        val CUSTOM_THEME_BACKGROUND_KEY = longPreferencesKey("hackeros_custom_theme_background")
+        val CUSTOM_THEME_CARD_KEY = longPreferencesKey("hackeros_custom_theme_card")
     }
 
     val themeFlow: Flow<ThemeId> = context.dataStore.data.map { prefs ->
@@ -129,5 +147,64 @@ class PreferencesRepository(private val context: Context) {
 
     suspend fun saveLastKnownVersion(version: String) {
         context.dataStore.edit { it[LAST_KNOWN_VERSION_KEY] = version }
+    }
+
+    // --- Section visibility -----------------------------------------------------------------
+
+    val docsSectionEnabledFlow: Flow<Boolean> = context.dataStore.data.map { prefs ->
+        prefs[DOCS_SECTION_ENABLED_KEY] ?: true
+    }
+
+    val gamesStoreSectionEnabledFlow: Flow<Boolean> = context.dataStore.data.map { prefs ->
+        prefs[GAMES_STORE_SECTION_ENABLED_KEY] ?: true
+    }
+
+    suspend fun saveDocsSectionEnabled(enabled: Boolean) {
+        context.dataStore.edit { it[DOCS_SECTION_ENABLED_KEY] = enabled }
+    }
+
+    suspend fun saveGamesStoreSectionEnabled(enabled: Boolean) {
+        context.dataStore.edit { it[GAMES_STORE_SECTION_ENABLED_KEY] = enabled }
+    }
+
+    // --- Games Store offline cache ----------------------------------------------------------
+
+    val cachedGamesStoreJsonFlow: Flow<String?> = context.dataStore.data.map { prefs ->
+        prefs[CACHED_GAMES_STORE_JSON_KEY]
+    }
+
+    suspend fun saveCachedGamesStoreJson(json: String) {
+        context.dataStore.edit { it[CACHED_GAMES_STORE_JSON_KEY] = json }
+    }
+
+    // --- Documentation offline cache --------------------------------------------------------
+
+    val cachedDocJsFlow: Flow<String?> = context.dataStore.data.map { prefs ->
+        prefs[CACHED_DOC_JS_KEY]
+    }
+
+    suspend fun saveCachedDocJs(js: String) {
+        context.dataStore.edit { it[CACHED_DOC_JS_KEY] = js }
+    }
+
+    // --- Custom theme (v0.6) ----------------------------------------------------------------
+
+    data class CustomThemeColors(val primary: Long, val background: Long, val card: Long)
+
+    val customThemeColorsFlow: Flow<CustomThemeColors?> = context.dataStore.data.map { prefs ->
+        val primary = prefs[CUSTOM_THEME_PRIMARY_KEY]
+        val background = prefs[CUSTOM_THEME_BACKGROUND_KEY]
+        val card = prefs[CUSTOM_THEME_CARD_KEY]
+        if (primary != null && background != null && card != null) {
+            CustomThemeColors(primary, background, card)
+        } else null
+    }
+
+    suspend fun saveCustomThemeColors(primary: Long, background: Long, card: Long) {
+        context.dataStore.edit {
+            it[CUSTOM_THEME_PRIMARY_KEY] = primary
+            it[CUSTOM_THEME_BACKGROUND_KEY] = background
+            it[CUSTOM_THEME_CARD_KEY] = card
+        }
     }
 }
