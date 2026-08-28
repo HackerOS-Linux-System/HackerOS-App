@@ -60,6 +60,15 @@ class MainActivity : ComponentActivity() {
                 val showWhatsNew by viewModel.showWhatsNew.collectAsState()
                 val docsSectionEnabled by viewModel.docsSectionEnabled.collectAsState()
                 val gamesStoreSectionEnabled by viewModel.gamesStoreSectionEnabled.collectAsState()
+                val releasesSectionEnabled by viewModel.releasesSectionEnabled.collectAsState()
+                val wallpapersSectionEnabled by viewModel.wallpapersSectionEnabled.collectAsState()
+                val gallerySectionEnabled by viewModel.gallerySectionEnabled.collectAsState()
+                val teamSectionEnabled by viewModel.teamSectionEnabled.collectAsState()
+                val sectionToggleBlocked by viewModel.sectionToggleBlocked.collectAsState()
+                val wallpapers by viewModel.wallpapers.collectAsState()
+                val wallpapersLoading by viewModel.wallpapersLoading.collectAsState()
+                val wallpapersError by viewModel.wallpapersError.collectAsState()
+                val wallpapersFromCache by viewModel.wallpapersFromCache.collectAsState()
                 val docPage by viewModel.docPage.collectAsState()
                 val docLoading by viewModel.docLoading.collectAsState()
                 val docError by viewModel.docError.collectAsState()
@@ -83,6 +92,17 @@ class MainActivity : ComponentActivity() {
                         android.widget.Toast.makeText(
                             context, translations.notif_permission_denied, android.widget.Toast.LENGTH_SHORT
                         ).show()
+                    }
+                }
+
+                // Explains why a Settings toggle didn't take effect (would have hidden every
+                // toggleable section at once) - shown exactly once per block, then consumed.
+                LaunchedEffect(sectionToggleBlocked) {
+                    if (sectionToggleBlocked) {
+                        android.widget.Toast.makeText(
+                            context, translations.pref_sections_last_enabled_hint, android.widget.Toast.LENGTH_SHORT
+                        ).show()
+                        viewModel.consumeSectionToggleBlocked()
                     }
                 }
 
@@ -118,7 +138,7 @@ class MainActivity : ComponentActivity() {
                         ) { screen ->
                             Box(modifier = Modifier.fillMaxSize()) {
                                 when (screen) {
-                                    AppScreen.RELEASES -> ReleasesScreen(
+                                    AppScreen.RELEASES -> if (releasesSectionEnabled) ReleasesScreen(
                                         releases = releases,
                                         loading = releasesLoading,
                                         error = releasesError,
@@ -126,11 +146,15 @@ class MainActivity : ComponentActivity() {
                                         translations = translations,
                                         onRetry = { viewModel.fetchReleases() }
                                     )
-                                    AppScreen.WALLPAPERS -> WallpapersScreen(
-                                        wallpapers = Constants.WALLPAPERS,
-                                        translations = translations
+                                    AppScreen.WALLPAPERS -> if (wallpapersSectionEnabled) WallpapersScreen(
+                                        wallpapers = wallpapers,
+                                        loading = wallpapersLoading,
+                                        error = wallpapersError,
+                                        fromCache = wallpapersFromCache,
+                                        translations = translations,
+                                        onRetry = { viewModel.fetchWallpapers() }
                                     )
-                                    AppScreen.GALLERY -> GalleryScreen(
+                                    AppScreen.GALLERY -> if (gallerySectionEnabled) GalleryScreen(
                                         images = gallery,
                                         loading = galleryLoading,
                                         error = galleryError,
@@ -160,7 +184,7 @@ class MainActivity : ComponentActivity() {
                                         translations = translations,
                                         onRetry = { viewModel.fetchGamesStore() }
                                     )
-                                    AppScreen.TEAM -> TeamScreen(translations = translations)
+                                    AppScreen.TEAM -> if (teamSectionEnabled) TeamScreen(translations = translations)
                                     AppScreen.SETTINGS -> SettingsScreen(
                                         currentTheme = currentThemeId,
                                         onThemeChange = { viewModel.setTheme(it) },
@@ -191,6 +215,14 @@ class MainActivity : ComponentActivity() {
                                                                          onToggleDocsSection = { viewModel.setDocsSectionEnabled(it) },
                                                                          gamesStoreSectionEnabled = gamesStoreSectionEnabled,
                                                                          onToggleGamesStoreSection = { viewModel.setGamesStoreSectionEnabled(it) },
+                                                                         releasesSectionEnabled = releasesSectionEnabled,
+                                                                         onToggleReleasesSection = { viewModel.setReleasesSectionEnabled(it) },
+                                                                         wallpapersSectionEnabled = wallpapersSectionEnabled,
+                                                                         onToggleWallpapersSection = { viewModel.setWallpapersSectionEnabled(it) },
+                                                                         gallerySectionEnabled = gallerySectionEnabled,
+                                                                         onToggleGallerySection = { viewModel.setGallerySectionEnabled(it) },
+                                                                         teamSectionEnabled = teamSectionEnabled,
+                                                                         onToggleTeamSection = { viewModel.setTeamSectionEnabled(it) },
                                                                          customThemeColors = customThemeColors,
                                                                          onSaveCustomTheme = { p, b, c -> viewModel.saveCustomTheme(p, b, c) },
                                                                          translations = translations
@@ -205,7 +237,11 @@ class MainActivity : ComponentActivity() {
                                 onScreenChange = { viewModel.setScreen(it) },
                                            translations = translations,
                                            docsEnabled = docsSectionEnabled,
-                                           gamesStoreEnabled = gamesStoreSectionEnabled
+                                           gamesStoreEnabled = gamesStoreSectionEnabled,
+                                           releasesEnabled = releasesSectionEnabled,
+                                           wallpapersEnabled = wallpapersSectionEnabled,
+                                           galleryEnabled = gallerySectionEnabled,
+                                           teamEnabled = teamSectionEnabled
                             )
                         }
 
