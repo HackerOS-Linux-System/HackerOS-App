@@ -44,8 +44,19 @@ class PreferencesRepository(private val context: Context) {
         val DOCS_SECTION_ENABLED_KEY = booleanPreferencesKey("hackeros_docs_section_enabled")
         val GAMES_STORE_SECTION_ENABLED_KEY = booleanPreferencesKey("hackeros_games_store_section_enabled")
 
+        // v0.7: the remaining four sections gained the same show/hide toggle. All default on.
+        val RELEASES_SECTION_ENABLED_KEY = booleanPreferencesKey("hackeros_releases_section_enabled")
+        val WALLPAPERS_SECTION_ENABLED_KEY = booleanPreferencesKey("hackeros_wallpapers_section_enabled")
+        val GALLERY_SECTION_ENABLED_KEY = booleanPreferencesKey("hackeros_gallery_section_enabled")
+        val TEAM_SECTION_ENABLED_KEY = booleanPreferencesKey("hackeros_team_section_enabled")
+
         // Offline cache for the Games Store catalog, same pattern as releases/gallery.
         val CACHED_GAMES_STORE_JSON_KEY = stringPreferencesKey("hackeros_cached_games_store_json")
+
+        // v0.7: offline cache for the dynamically-fetched wallpapers list (same pattern as
+        // gallery), now that names/entries come live from the phone-wallpapers folder on GitHub
+        // instead of being hardcoded in the app.
+        val CACHED_WALLPAPERS_JSON_KEY = stringPreferencesKey("hackeros_cached_wallpapers_json")
 
         // Offline cache for the raw documentation JS source, so a previously-loaded page can
         // still be parsed and shown fully offline.
@@ -167,6 +178,32 @@ class PreferencesRepository(private val context: Context) {
         context.dataStore.edit { it[GAMES_STORE_SECTION_ENABLED_KEY] = enabled }
     }
 
+    val releasesSectionEnabledFlow: Flow<Boolean> = context.dataStore.data.map { prefs ->
+        prefs[RELEASES_SECTION_ENABLED_KEY] ?: true
+    }
+    val wallpapersSectionEnabledFlow: Flow<Boolean> = context.dataStore.data.map { prefs ->
+        prefs[WALLPAPERS_SECTION_ENABLED_KEY] ?: true
+    }
+    val gallerySectionEnabledFlow: Flow<Boolean> = context.dataStore.data.map { prefs ->
+        prefs[GALLERY_SECTION_ENABLED_KEY] ?: true
+    }
+    val teamSectionEnabledFlow: Flow<Boolean> = context.dataStore.data.map { prefs ->
+        prefs[TEAM_SECTION_ENABLED_KEY] ?: true
+    }
+
+    suspend fun saveReleasesSectionEnabled(enabled: Boolean) {
+        context.dataStore.edit { it[RELEASES_SECTION_ENABLED_KEY] = enabled }
+    }
+    suspend fun saveWallpapersSectionEnabled(enabled: Boolean) {
+        context.dataStore.edit { it[WALLPAPERS_SECTION_ENABLED_KEY] = enabled }
+    }
+    suspend fun saveGallerySectionEnabled(enabled: Boolean) {
+        context.dataStore.edit { it[GALLERY_SECTION_ENABLED_KEY] = enabled }
+    }
+    suspend fun saveTeamSectionEnabled(enabled: Boolean) {
+        context.dataStore.edit { it[TEAM_SECTION_ENABLED_KEY] = enabled }
+    }
+
     // --- Games Store offline cache ----------------------------------------------------------
 
     val cachedGamesStoreJsonFlow: Flow<String?> = context.dataStore.data.map { prefs ->
@@ -175,6 +212,16 @@ class PreferencesRepository(private val context: Context) {
 
     suspend fun saveCachedGamesStoreJson(json: String) {
         context.dataStore.edit { it[CACHED_GAMES_STORE_JSON_KEY] = json }
+    }
+
+    // --- Wallpapers offline cache (v0.7) ------------------------------------------------------
+
+    val cachedWallpapersJsonFlow: Flow<String?> = context.dataStore.data.map { prefs ->
+        prefs[CACHED_WALLPAPERS_JSON_KEY]
+    }
+
+    suspend fun saveCachedWallpapersJson(json: String) {
+        context.dataStore.edit { it[CACHED_WALLPAPERS_JSON_KEY] = json }
     }
 
     // --- Documentation offline cache --------------------------------------------------------
