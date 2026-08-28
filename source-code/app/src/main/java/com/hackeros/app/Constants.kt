@@ -1,7 +1,7 @@
 package com.hackeros.app
 
 object Constants {
-    const val APP_VERSION = "0.6"
+    const val APP_VERSION = "0.7"
 
     // --- Releases -----------------------------------------------------------------------
     //
@@ -69,26 +69,19 @@ object Constants {
     const val GAMES_STORE_JSON_URL =
         "https://raw.githubusercontent.com/HackerOS-Linux-System/HackerOS-App/main/games-store/community-games.json"
 
-    val WALLPAPERS = listOf(
-        WallpaperItem(1, "Default HackerOS",
-            "https://raw.githubusercontent.com/HackerOS-Linux-System/HackerOS-Website/main/phone-wallpapers/default-wallpaper.png"),
-        WallpaperItem(2, "Cyber Grid",
-            "https://raw.githubusercontent.com/HackerOS-Linux-System/HackerOS-Website/main/phone-wallpapers/wallpaper.png"),
-        WallpaperItem(3, "Neon Nights",
-            "https://raw.githubusercontent.com/HackerOS-Linux-System/HackerOS-Website/main/phone-wallpapers/wallpaper1.png"),
-        WallpaperItem(4, "Abstract Flow",
-            "https://raw.githubusercontent.com/HackerOS-Linux-System/HackerOS-Website/main/phone-wallpapers/wallpaper2.png"),
-        WallpaperItem(5, "Deep Space",
-            "https://raw.githubusercontent.com/HackerOS-Linux-System/HackerOS-Website/main/phone-wallpapers/wallpaper3.png"),
-        WallpaperItem(6, "Code Rain",
-            "https://raw.githubusercontent.com/HackerOS-Linux-System/HackerOS-Website/main/phone-wallpapers/wallpaper4.png"),
-        WallpaperItem(7, "Circuitry",
-            "https://raw.githubusercontent.com/HackerOS-Linux-System/HackerOS-Website/main/phone-wallpapers/wallpaper5.png"),
-    )
+    // --- Wallpapers -----------------------------------------------------------------------
+    //
+    // v0.7: previously a small hardcoded list with invented names ("Cyber Grid", "Neon
+    // Nights"...) that had nothing to do with the actual files. As of v0.7 this mirrors the
+    // Gallery section's own approach: fetched live from the website repo's own
+    // `phone-wallpapers` folder via the GitHub contents API, so whatever is actually in that
+    // folder is what shows up here - added, removed, or renamed - with a display name derived
+    // straight from each real filename (see MainViewModel.fetchWallpapers).
+    const val WALLPAPERS_API_URL = "https://api.github.com/repos/HackerOS-Linux-System/HackerOS-Website/contents/phone-wallpapers"
 }
 
 data class WallpaperItem(
-    val id: Int,
+    val id: String,
     val name: String,
     val url: String
 )
