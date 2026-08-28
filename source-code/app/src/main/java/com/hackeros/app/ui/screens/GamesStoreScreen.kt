@@ -1,5 +1,9 @@
 package com.hackeros.app.ui.screens
 
+import android.content.ClipData
+import android.content.ClipboardManager
+import android.content.Context
+import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -164,6 +168,7 @@ fun GamesStoreScreen(
     }
 
     selectedGame?.let { game ->
+        val uriHandler = androidx.compose.ui.platform.LocalUriHandler.current
         GameDetailDialog(
             game = game,
             installState = installStates[game.id],
@@ -172,7 +177,12 @@ fun GamesStoreScreen(
             onDismiss = { selectedGame = null },
             onDownload = { onDownload(game) },
             onInstall = { onInstall(game.id) },
-            onOpen = { onOpen(game.packageName) }
+            onOpen = { onOpen(game.packageName) },
+            onOpenRepo = {
+                val url = game.sourceUrl
+                    ?: game.repoOwner?.let { owner -> game.repoName?.let { repo -> "https://github.com/$owner/$repo" } }
+                if (url != null) try { uriHandler.openUri(url) } catch (_: Exception) {}
+            }
         )
     }
 }
@@ -240,12 +250,14 @@ private fun GameRow(
 
         GameActionButton(
             small = true,
+            game = game,
             installState = installState,
             installed = installed,
             translations = t,
             onDownload = { },
             onInstall = { },
             onOpen = { },
+            onOpenRepo = { },
             disabled = true
         )
     }
@@ -254,18 +266,40 @@ private fun GameRow(
 @Composable
 private fun GameActionButton(
     small: Boolean,
+    game: CommunityGame,
     installState: MainViewModel.ApkUpdateState?,
     installed: Boolean,
     translations: Translations,
     onDownload: () -> Unit,
     onInstall: () -> Unit,
     onOpen: () -> Unit,
+    onOpenRepo: () -> Unit,
     disabled: Boolean = false
 ) {
     val theme = LocalAppTheme.current
     val t = translations
     val height = if (small) 32.dp else 46.dp
     val fontSize = if (small) 10.sp else 12.sp
+
+    if (game.isSourceBuild) {
+        // Source-only entries never claim to silently "compile" arbitrary code on the phone -
+        // there's no Android toolchain for that on-device. Instead this opens the repository,
+        // and the full build/clone commands are shown (copyable) in the detail dialog below.
+        Button(
+            onClick = onOpenRepo, enabled = !disabled,
+            colors = ButtonDefaults.buttonColors(containerColor = Color.White.copy(alpha = 0.08f)),
+            shape = RoundedCornerShape(10.dp),
+            contentPadding = PaddingValues(horizontal = 12.dp),
+            modifier = Modifier.height(height)
+        ) {
+            Icon(Icons.Default.Code, null, tint = theme.textColor(), modifier = Modifier.size(if (small) 12.dp else 14.dp))
+            if (!small) {
+                Spacer(Modifier.width(6.dp))
+                Text(t.games_source_build_title, fontWeight = FontWeight.Bold, fontSize = fontSize, color = theme.textColor())
+            }
+        }
+        return
+    }
 
     when {
         installState is MainViewModel.ApkUpdateState.Downloading -> {
@@ -330,7 +364,8 @@ private fun GameDetailDialog(
     onDismiss: () -> Unit,
     onDownload: () -> Unit,
     onInstall: () -> Unit,
-    onOpen: () -> Unit
+    onOpen: () -> Unit,
+    onOpenRepo: () -> Unit
 ) {
     val theme = LocalAppTheme.current
     val t = translations
@@ -405,13 +440,19 @@ private fun GameDetailDialog(
                 Box(modifier = Modifier.fillMaxWidth()) {
                     GameActionButton(
                         small = false,
+                        game = game,
                         installState = installState,
                         installed = installed,
                         translations = t,
                         onDownload = onDownload,
                         onInstall = onInstall,
-                        onOpen = onOpen
+                        onOpen = onOpen,
+                        onOpenRepo = onOpenRepo
                     )
+                }
+                if (game.isSourceBuild) {
+                    Spacer(Modifier.height(14.dp))
+                    SourceBuildCard(game = game, translations = t)
                 }
                 if (installState is MainViewModel.ApkUpdateState.ReadyToInstall && !installState.verified) {
                     Spacer(Modifier.height(8.dp))
@@ -421,6 +462,77 @@ private fun GameDetailDialog(
                     Spacer(Modifier.height(8.dp))
                     Text(t.wallpaper_install_error, fontSize = 10.sp, color = Color(0xFFEF4444))
                 }
+            }
+        }
+    }
+}
+
+@Composable
+private fun SourceBuildCard(game: CommunityGame, translations: Translations) {
+    val theme = LocalAppTheme.current
+    val t = translations
+    val context = androidx.compose.ui.platform.LocalContext.current
+
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(12.dp))
+            .background(theme.backgroundColor())
+            .border(1.dp, Color.White.copy(alpha = 0.06f), RoundedCornerShape(12.dp))
+            .padding(14.dp)
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Icon(Icons.Default.Code, null, tint = theme.primaryColor(), modifier = Modifier.size(14.dp))
+            Spacer(Modifier.width(6.dp))
+            Text(t.games_source_build_title, fontWeight = FontWeight.Bold, fontSize = 12.sp, color = theme.textColor())
+        }
+        Spacer(Modifier.height(6.dp))
+        Text(t.games_source_build_desc, fontSize = 11.sp, color = theme.mutedColor(), lineHeight = 15.sp)
+
+        if (game.repoOwner != null && game.repoName != null) {
+            Spacer(Modifier.height(8.dp))
+            Text(
+                "${game.repoOwner}/${game.repoName}  (${game.repoBranch})",
+                fontFamily = FontFamily.Monospace, fontSize = 11.sp, color = theme.primaryColor()
+            )
+        }
+
+        val commands = game.buildCommands.ifEmpty {
+            if (game.repoOwner != null && game.repoName != null) listOf(
+                "git clone --branch ${game.repoBranch} https://github.com/${game.repoOwner}/${game.repoName}.git",
+                "cd ${game.repoName}"
+            ) else emptyList()
+        }
+
+        if (commands.isNotEmpty()) {
+            Spacer(Modifier.height(10.dp))
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(8.dp))
+                    .background(Color.Black.copy(alpha = 0.35f))
+                    .padding(10.dp)
+            ) {
+                commands.forEach { cmd ->
+                    Text(cmd, fontFamily = FontFamily.Monospace, fontSize = 10.sp, color = theme.textColor(),
+                        modifier = Modifier.padding(vertical = 1.dp))
+                }
+            }
+            Spacer(Modifier.height(8.dp))
+            Row(
+                modifier = Modifier
+                    .clip(RoundedCornerShape(8.dp))
+                    .clickable {
+                        val cm = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+                        cm.setPrimaryClip(ClipData.newPlainText("build-commands", commands.joinToString("\n")))
+                        Toast.makeText(context, t.toast_copied, Toast.LENGTH_SHORT).show()
+                    }
+                    .padding(vertical = 4.dp, horizontal = 2.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                Icon(Icons.Default.ContentCopy, null, tint = theme.primaryColor(), modifier = Modifier.size(12.dp))
+                Text(t.games_source_copy_commands, fontSize = 11.sp, color = theme.primaryColor())
             }
         }
     }
