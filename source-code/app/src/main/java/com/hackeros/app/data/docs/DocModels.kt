@@ -17,7 +17,14 @@ sealed class DocBlock {
     data class Command(val text: String) : DocBlock()
     /** A larger, syntax-free code sample (e.g. the HackerScript example). */
     data class CodeSample(val text: String) : DocBlock()
-    data class LinkLine(val labelHtml: String, val url: String) : DocBlock()
+    /**
+     * [nativeDetailKey], when non-null, means this link opens a native in-app detail page
+     * (see DocContentParser.detailTabsFor) instead of handing off to the external browser via
+     * [url] - so tapping it never "teleports" out of the app or opens any WebView. [url] is kept
+     * as a fallback/reference (e.g. shown as an external "view online" link inside that detail
+     * page) and is only used to leave the app directly when [nativeDetailKey] is null.
+     */
+    data class LinkLine(val labelHtml: String, val url: String, val nativeDetailKey: String? = null) : DocBlock()
     data class ToolsTable(val rows: List<Triple<String, String, String>>) : DocBlock()
     object Divider : DocBlock()
 }
