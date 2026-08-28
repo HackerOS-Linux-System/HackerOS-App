@@ -148,7 +148,30 @@ data class Translations(
     val custom_theme_hex_hint: String = "Hex code",
     val custom_theme_preview: String = "Preview",
     val custom_theme_save: String = "Save Theme",
-    val custom_theme_cancel: String = "Cancel"
+    val custom_theme_cancel: String = "Cancel",
+    // --- v0.7 ---
+    // Native "documentation link" detail pages (Hacker Lang / H# / HackerScript) - fixes the
+    // old behaviour where these links opened an external browser tab.
+    val doc_detail_back: String = "Back",
+    val doc_detail_native_notice: String = "Native in-app page - no browser, no WebView",
+    val doc_detail_pl_only_notice: String = "This reference is currently only available in Polish (same as the source).",
+    // Section visibility toggles for the 4 sections that gained the show/hide switch already
+    // used by Documentation and Games Store (Releases/Wallpapers/Gallery/Team).
+    val pref_show_releases_section: String = "Show Releases",
+    val pref_show_wallpapers_section: String = "Show Wallpapers",
+    val pref_show_gallery_section: String = "Show Gallery",
+    val pref_show_team_section: String = "Show Team",
+    val pref_sections_last_enabled_hint: String = "Keep at least one section enabled - Settings is always available to turn others back on.",
+    // Wallpapers now fetched live instead of hardcoded.
+    val wallpapers_empty: String = "No wallpapers available right now",
+    // Games Store: source-build (GitHub repo) entries.
+    val games_source_build_title: String = "Build from source",
+    val games_source_build_desc: String = "This game ships as a source repository rather than a prebuilt package. Building native binaries on-device isn't supported yet - clone and build it using the commands below.",
+    val games_source_copy_commands: String = "Copy commands",
+    // Team screen contact card.
+    val team_contact_title: String = "Contact",
+    val team_contact_desc: String = "Questions, ideas, or found a bug? Reach out - tap to email us.",
+    val team_contact_future_note: String = "Coming soon: send a message straight from this screen."
 )
 
 val TRANSLATIONS: Map<Language, Translations> = mapOf(
@@ -257,7 +280,22 @@ val TRANSLATIONS: Map<Language, Translations> = mapOf(
         custom_theme_hex_hint = "Kod hex",
         custom_theme_preview = "Podgląd",
         custom_theme_save = "Zapisz motyw",
-        custom_theme_cancel = "Anuluj"
+        custom_theme_cancel = "Anuluj",
+        doc_detail_back = "Wstecz",
+        doc_detail_native_notice = "Natywna strona w aplikacji - bez przeglądarki, bez WebView",
+        doc_detail_pl_only_notice = "Ta dokumentacja jest na razie dostępna tylko po polsku (tak jak źródło).",
+        pref_show_releases_section = "Pokaż Wydania",
+        pref_show_wallpapers_section = "Pokaż Tapety",
+        pref_show_gallery_section = "Pokaż Galerię",
+        pref_show_team_section = "Pokaż Zespół",
+        pref_sections_last_enabled_hint = "Musisz zostawić co najmniej jedną sekcję włączoną - Ustawienia są zawsze dostępne, aby włączyć pozostałe z powrotem.",
+        wallpapers_empty = "Brak dostępnych tapet",
+        games_source_build_title = "Budowanie ze źródeł",
+        games_source_build_desc = "Ta gra jest dystrybuowana jako repozytorium źródłowe, a nie gotowy pakiet. Budowanie natywnych plików binarnych bezpośrednio na telefonie nie jest jeszcze wspierane - sklonuj i zbuduj ją za pomocą poniższych poleceń.",
+        games_source_copy_commands = "Kopiuj polecenia",
+        team_contact_title = "Kontakt",
+        team_contact_desc = "Pytania, pomysły albo znalazłeś błąd? Napisz do nas - dotknij, aby wysłać e-mail.",
+        team_contact_future_note = "Wkrótce: wysyłanie wiadomości bezpośrednio z tego ekranu."
     ),
     Language.EN to Translations(
         nav_releases = "Releases", nav_wallpapers = "Wallpapers", nav_gallery = "Gallery",
@@ -365,7 +403,22 @@ val TRANSLATIONS: Map<Language, Translations> = mapOf(
         custom_theme_hex_hint = "Hex code",
         custom_theme_preview = "Preview",
         custom_theme_save = "Save Theme",
-        custom_theme_cancel = "Cancel"
+        custom_theme_cancel = "Cancel",
+        doc_detail_back = "Back",
+        doc_detail_native_notice = "Native in-app page - no browser, no WebView",
+        doc_detail_pl_only_notice = "This reference is currently only available in Polish (same as the source).",
+        pref_show_releases_section = "Show Releases",
+        pref_show_wallpapers_section = "Show Wallpapers",
+        pref_show_gallery_section = "Show Gallery",
+        pref_show_team_section = "Show Team",
+        pref_sections_last_enabled_hint = "Keep at least one section enabled - Settings is always available to turn others back on.",
+        wallpapers_empty = "No wallpapers available right now",
+        games_source_build_title = "Build from source",
+        games_source_build_desc = "This game ships as a source repository rather than a prebuilt package. Building native binaries on-device isn't supported yet - clone and build it using the commands below.",
+        games_source_copy_commands = "Copy commands",
+        team_contact_title = "Contact",
+        team_contact_desc = "Questions, ideas, or found a bug? Reach out - tap to email us.",
+        team_contact_future_note = "Coming soon: send a message straight from this screen."
     ),
     Language.DE to Translations(
         nav_releases = "Releases", nav_wallpapers = "Hintergründe", nav_gallery = "Galerie",
