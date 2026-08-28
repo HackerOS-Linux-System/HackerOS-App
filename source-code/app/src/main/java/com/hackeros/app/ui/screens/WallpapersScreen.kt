@@ -69,7 +69,11 @@ private enum class WallpaperTarget { HOME, LOCK, BOTH }
 @Composable
 fun WallpapersScreen(
     wallpapers: List<WallpaperItem>,
-    translations: Translations
+    loading: Boolean,
+    error: Boolean,
+    fromCache: Boolean,
+    translations: Translations,
+    onRetry: () -> Unit
 ) {
     val theme = LocalAppTheme.current
     val t = translations
@@ -77,8 +81,10 @@ fun WallpapersScreen(
     val scope = rememberCoroutineScope()
     var selectedWallpaper by remember { mutableStateOf<WallpaperItem?>(null) }
 
-    // Per-wallpaper install state (download progress / installed bitmap / error), keyed by id.
-    val installStates = remember { mutableStateMapOf<Int, WallpaperInstallState>() }
+    // Per-wallpaper install state (download progress / installed bitmap / error), keyed by the
+    // wallpaper's stable id (its GitHub blob sha as of v0.7, so it stays correct across refetches
+    // even if the folder's file list is reordered - unlike a plain positional index).
+    val installStates = remember { mutableStateMapOf<String, WallpaperInstallState>() }
     // When non-null, shows the "where should this wallpaper be set?" target-picker dialog.
     var pendingSetWallpaper by remember { mutableStateOf<Pair<WallpaperItem, Bitmap>?>(null) }
     var settingWallpaper by remember { mutableStateOf(false) }
@@ -87,7 +93,7 @@ fun WallpapersScreen(
     // so a wallpaper installed while online is still viewable/settable entirely offline later -
     // this is the local cache for wallpapers (releases/gallery use DataStore; a raw file cache
     // is the natural fit here since the cached data is the image bytes themselves).
-    LaunchedEffect(Unit) {
+    LaunchedEffect(wallpapers) {
         withContext(Dispatchers.IO) {
             wallpapers.forEach { wp ->
                 val cached = wallpaperCacheFile(context, wp.id)
@@ -170,20 +176,52 @@ fun WallpapersScreen(
             )
         }
 
-        LazyVerticalGrid(
-            columns = GridCells.Fixed(2),
-            contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 100.dp),
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            items(wallpapers) { wp ->
-                WallpaperThumbnail(
-                    wallpaper = wp,
-                    hdLabel = t.hd_asset,
-                    primaryColor = theme.primaryColor(),
-                    installState = installStates[wp.id] ?: WallpaperInstallState.Idle,
-                    onClick = { selectedWallpaper = wp }
-                )
+        when {
+            loading -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                CircularProgressIndicator(color = theme.primaryColor())
+            }
+            error -> Box(Modifier.fillMaxSize().padding(32.dp), contentAlignment = Alignment.Center) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Icon(Icons.Default.WifiOff, null, tint = Color(0xFFEF4444), modifier = Modifier.size(40.dp))
+                    Spacer(Modifier.height(12.dp))
+                    Text(t.error_signal, color = Color(0xFFEF4444), fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                    Spacer(Modifier.height(20.dp))
+                    Button(onClick = onRetry, colors = ButtonDefaults.buttonColors(containerColor = theme.primaryColor())) {
+                        Icon(Icons.Default.Refresh, null, tint = theme.backgroundColor(), modifier = Modifier.size(16.dp))
+                        Spacer(Modifier.width(8.dp))
+                        Text(t.retry, fontWeight = FontWeight.Bold, fontSize = 12.sp, color = theme.backgroundColor())
+                    }
+                }
+            }
+            wallpapers.isEmpty() -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Icon(Icons.Default.Wallpaper, null, tint = theme.mutedColor().copy(alpha = 0.2f), modifier = Modifier.size(56.dp))
+                    Spacer(Modifier.height(12.dp))
+                    Text(t.wallpapers_empty, color = theme.mutedColor(), fontSize = 13.sp)
+                }
+            }
+            else -> {
+                if (fromCache) {
+                    Box(Modifier.padding(horizontal = 20.dp, top = 0.dp, bottom = 12.dp)) {
+                        OfflineBanner(text = t.offline_cached_banner, primaryColor = theme.primaryColor())
+                    }
+                }
+                LazyVerticalGrid(
+                    columns = GridCells.Fixed(2),
+                    contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 100.dp),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    items(wallpapers, key = { it.id }) { wp ->
+                        WallpaperThumbnail(
+                            wallpaper = wp,
+                            hdLabel = t.hd_asset,
+                            primaryColor = theme.primaryColor(),
+                            installState = installStates[wp.id] ?: WallpaperInstallState.Idle,
+                            onClick = { selectedWallpaper = wp }
+                        )
+                    }
+                }
             }
         }
     }
@@ -532,10 +570,10 @@ private suspend fun downloadBitmapWithProgress(
 }
 
 /** Local on-disk cache file for a given wallpaper id, under the app's private files dir. */
-private fun wallpaperCacheFile(context: Context, wallpaperId: Int): File =
+private fun wallpaperCacheFile(context: Context, wallpaperId: String): File =
     File(context.filesDir, "wallpapers").apply { mkdirs() }.let { File(it, "$wallpaperId.png") }
 
-private fun cacheWallpaperLocally(context: Context, wallpaperId: Int, bitmap: Bitmap) {
+private fun cacheWallpaperLocally(context: Context, wallpaperId: String, bitmap: Bitmap) {
     try {
         wallpaperCacheFile(context, wallpaperId).outputStream().use { out ->
             bitmap.compress(Bitmap.CompressFormat.PNG, 100, out)
