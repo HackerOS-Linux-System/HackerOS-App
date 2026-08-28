@@ -78,6 +78,19 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     private val _galleryFromCache = MutableStateFlow(false)
     val galleryFromCache: StateFlow<Boolean> = _galleryFromCache.asStateFlow()
 
+    // --- Wallpapers (v0.7: fetched live, same pattern as Gallery - no more hardcoded names) ---
+    private val _wallpapers = MutableStateFlow<List<WallpaperItem>>(emptyList())
+    val wallpapers: StateFlow<List<WallpaperItem>> = _wallpapers.asStateFlow()
+
+    private val _wallpapersLoading = MutableStateFlow(true)
+    val wallpapersLoading: StateFlow<Boolean> = _wallpapersLoading.asStateFlow()
+
+    private val _wallpapersError = MutableStateFlow(false)
+    val wallpapersError: StateFlow<Boolean> = _wallpapersError.asStateFlow()
+
+    private val _wallpapersFromCache = MutableStateFlow(false)
+    val wallpapersFromCache: StateFlow<Boolean> = _wallpapersFromCache.asStateFlow()
+
     // --- Notifications ---
     private val _notificationsEnabled = MutableStateFlow(false)
     val notificationsEnabled: StateFlow<Boolean> = _notificationsEnabled.asStateFlow()
@@ -122,6 +135,19 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     private val _gamesStoreSectionEnabled = MutableStateFlow(true)
     val gamesStoreSectionEnabled: StateFlow<Boolean> = _gamesStoreSectionEnabled.asStateFlow()
 
+    // v0.7: the remaining four sections gained the same toggle.
+    private val _releasesSectionEnabled = MutableStateFlow(true)
+    val releasesSectionEnabled: StateFlow<Boolean> = _releasesSectionEnabled.asStateFlow()
+
+    private val _wallpapersSectionEnabled = MutableStateFlow(true)
+    val wallpapersSectionEnabled: StateFlow<Boolean> = _wallpapersSectionEnabled.asStateFlow()
+
+    private val _gallerySectionEnabled = MutableStateFlow(true)
+    val gallerySectionEnabled: StateFlow<Boolean> = _gallerySectionEnabled.asStateFlow()
+
+    private val _teamSectionEnabled = MutableStateFlow(true)
+    val teamSectionEnabled: StateFlow<Boolean> = _teamSectionEnabled.asStateFlow()
+
     // --- Documentation (native, parsed from the website's own data file - no WebView) ---
     private val _docPage = MutableStateFlow<DocPage?>(null)
     val docPage: StateFlow<DocPage?> = _docPage.asStateFlow()
@@ -155,6 +181,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     init {
         loadPreferencesThenFetch()
         fetchGallery()
+        fetchWallpapers()
         fetchDocs()
         fetchGamesStore()
     }
@@ -170,6 +197,10 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             _watchedEditions.value = prefs.watchedEditionsFlow.first()
             _docsSectionEnabled.value = prefs.docsSectionEnabledFlow.first()
             _gamesStoreSectionEnabled.value = prefs.gamesStoreSectionEnabledFlow.first()
+            _releasesSectionEnabled.value = prefs.releasesSectionEnabledFlow.first()
+            _wallpapersSectionEnabled.value = prefs.wallpapersSectionEnabledFlow.first()
+            _gallerySectionEnabled.value = prefs.gallerySectionEnabledFlow.first()
+            _teamSectionEnabled.value = prefs.teamSectionEnabledFlow.first()
             // Keep the background worker in sync with the saved preference - important after
             // an app reinstall/update, where WorkManager's own schedule may have been reset.
             if (_notificationsEnabled.value) {
@@ -264,17 +295,81 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         viewModelScope.launch { prefs.saveWatchedEditions(null) }
     }
 
-    fun setDocsSectionEnabled(enabled: Boolean) {
-        _docsSectionEnabled.value = enabled
-        viewModelScope.launch { prefs.saveDocsSectionEnabled(enabled) }
-        // If the user is currently looking at a section they just hid, bounce back to Releases.
-        if (!enabled && _currentScreen.value == AppScreen.DOCS) _currentScreen.value = AppScreen.RELEASES
+    fun setDocsSectionEnabled(enabled: Boolean) = setSectionEnabled(
+        enabled, _docsSectionEnabled, AppScreen.DOCS
+    ) { viewModelScope.launch { prefs.saveDocsSectionEnabled(it) } }
+
+    fun setGamesStoreSectionEnabled(enabled: Boolean) = setSectionEnabled(
+        enabled, _gamesStoreSectionEnabled, AppScreen.GAMES_STORE
+    ) { viewModelScope.launch { prefs.saveGamesStoreSectionEnabled(it) } }
+
+    fun setReleasesSectionEnabled(enabled: Boolean) = setSectionEnabled(
+        enabled, _releasesSectionEnabled, AppScreen.RELEASES
+    ) { viewModelScope.launch { prefs.saveReleasesSectionEnabled(it) } }
+
+    fun setWallpapersSectionEnabled(enabled: Boolean) = setSectionEnabled(
+        enabled, _wallpapersSectionEnabled, AppScreen.WALLPAPERS
+    ) { viewModelScope.launch { prefs.saveWallpapersSectionEnabled(it) } }
+
+    fun setGallerySectionEnabled(enabled: Boolean) = setSectionEnabled(
+        enabled, _gallerySectionEnabled, AppScreen.GALLERY
+    ) { viewModelScope.launch { prefs.saveGallerySectionEnabled(it) } }
+
+    fun setTeamSectionEnabled(enabled: Boolean) = setSectionEnabled(
+        enabled, _teamSectionEnabled, AppScreen.TEAM
+    ) { viewModelScope.launch { prefs.saveTeamSectionEnabled(it) } }
+
+    // True right after an attempt to disable the very last remaining section was blocked (see
+    // setSectionEnabled below) - MainActivity observes this once to show a short explanatory
+    // Toast/snackbar, then clears it back to false.
+    private val _sectionToggleBlocked = MutableStateFlow(false)
+    val sectionToggleBlocked: StateFlow<Boolean> = _sectionToggleBlocked.asStateFlow()
+
+    fun consumeSectionToggleBlocked() {
+        _sectionToggleBlocked.value = false
     }
 
-    fun setGamesStoreSectionEnabled(enabled: Boolean) {
-        _gamesStoreSectionEnabled.value = enabled
-        viewModelScope.launch { prefs.saveGamesStoreSectionEnabled(enabled) }
-        if (!enabled && _currentScreen.value == AppScreen.GAMES_STORE) _currentScreen.value = AppScreen.RELEASES
+    /**
+     * Shared logic for all six section visibility toggles (Releases/Wallpapers/Gallery/Docs/
+     * GamesStore/Team). Settings itself is intentionally never one of these - it's always
+     * reachable so the user can always re-enable whatever they've hidden. If disabling [flow]
+     * would leave every one of the six toggleable sections off at once, the change is refused
+     * (the flow keeps its previous value) and [sectionToggleBlocked] is raised so the UI can
+     * explain why nothing happened; enabling a section is always allowed.
+     */
+    private fun setSectionEnabled(
+        enabled: Boolean,
+        flow: MutableStateFlow<Boolean>,
+        screen: AppScreen,
+        persist: (Boolean) -> Unit
+    ) {
+        if (!enabled) {
+            val otherwiseEnabledCount = listOf(
+                _releasesSectionEnabled, _wallpapersSectionEnabled, _gallerySectionEnabled,
+                _docsSectionEnabled, _gamesStoreSectionEnabled, _teamSectionEnabled
+            ).count { it !== flow && it.value }
+            if (otherwiseEnabledCount == 0) {
+                _sectionToggleBlocked.value = true
+                return
+            }
+        }
+        flow.value = enabled
+        persist(enabled)
+        // If the user is currently looking at a section they just hid, bounce back to the first
+        // section that's still enabled (falling back to Settings, which is always available).
+        if (!enabled && _currentScreen.value == screen) {
+            _currentScreen.value = firstEnabledScreenOrSettings()
+        }
+    }
+
+    private fun firstEnabledScreenOrSettings(): AppScreen = when {
+        _releasesSectionEnabled.value -> AppScreen.RELEASES
+        _wallpapersSectionEnabled.value -> AppScreen.WALLPAPERS
+        _gallerySectionEnabled.value -> AppScreen.GALLERY
+        _docsSectionEnabled.value -> AppScreen.DOCS
+        _gamesStoreSectionEnabled.value -> AppScreen.GAMES_STORE
+        _teamSectionEnabled.value -> AppScreen.TEAM
+        else -> AppScreen.SETTINGS
     }
 
     fun fetchReleases() {
@@ -389,6 +484,69 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             }
         }
     }
+
+    /**
+     * Fetches the live wallpaper list from the website repo's `phone-wallpapers` folder via the
+     * GitHub contents API - same approach as [fetchGallery] - instead of the old hardcoded,
+     * made-up-name list. Display names are derived from each real filename (see
+     * [wallpaperDisplayNameFor]) rather than invented, and the sha is used as a stable id so a
+     * locally cached/installed wallpaper still matches correctly across refetches.
+     */
+    fun fetchWallpapers() {
+        viewModelScope.launch {
+            _wallpapersLoading.value = true
+            _wallpapersError.value = false
+            try {
+                val json = withContext(Dispatchers.IO) {
+                    URL(Constants.WALLPAPERS_API_URL).readText()
+                }
+                val arr = JSONArray(json)
+                val items = mutableListOf<WallpaperItem>()
+                for (i in 0 until arr.length()) {
+                    val obj = arr.getJSONObject(i)
+                    val name = obj.getString("name")
+                    if (obj.getString("type") == "file" &&
+                        name.matches(Regex(".*\\.(jpg|jpeg|png|webp)", RegexOption.IGNORE_CASE))
+                    ) {
+                        items.add(
+                            WallpaperItem(
+                                id = obj.getString("sha"),
+                                name = wallpaperDisplayNameFor(name),
+                                url = obj.getString("download_url")
+                            )
+                        )
+                    }
+                }
+                items.sortBy { it.name }
+                _wallpapers.value = items
+                _wallpapersFromCache.value = false
+                prefs.saveCachedWallpapersJson(OfflineCacheCodec.wallpapersToJson(items))
+            } catch (e: Exception) {
+                val cachedJson = prefs.cachedWallpapersJsonFlow.first()
+                val cached = OfflineCacheCodec.wallpapersFromJson(cachedJson)
+                if (cached.isNotEmpty()) {
+                    _wallpapers.value = cached
+                    _wallpapersFromCache.value = true
+                    _wallpapersError.value = false
+                } else {
+                    _wallpapersError.value = true
+                    _wallpapersFromCache.value = false
+                }
+            } finally {
+                _wallpapersLoading.value = false
+            }
+        }
+    }
+
+    /** Turns a real repo filename like "wallpaper2.png" into "Wallpaper 2", "default-wallpaper.png" into "Default Wallpaper", etc. - no invented names, just a readable version of what's actually there. */
+    private fun wallpaperDisplayNameFor(filename: String): String {
+        val base = filename.substringBeforeLast('.')
+        val spaced = base.replace(Regex("[-_]+"), " ").replace(Regex("([a-zA-Z])(\\d)"), "$1 $2")
+        return spaced.split(" ")
+            .filter { it.isNotBlank() }
+            .joinToString(" ") { word -> word.replaceFirstChar { c -> c.uppercase() } }
+    }
+
 
     fun checkForUpdates() {
         viewModelScope.launch {
