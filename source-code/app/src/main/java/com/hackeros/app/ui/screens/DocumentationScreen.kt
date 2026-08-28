@@ -53,11 +53,29 @@ fun DocumentationScreen(
     var selectedTabKey by remember { mutableStateOf<String?>(null) }
     var searchQuery by remember { mutableStateOf("") }
 
+    // Non-null while a native documentation "detail" sub-page is open (see LinkLineView) - e.g.
+    // tapping "Official HackerScript documentation" pushes this instead of opening the external
+    // browser, so the whole flow stays natively inside the app with no WebView involved and
+    // nothing ever "teleports" the user away. Cleared whenever the underlying doc page changes
+    // (e.g. a language switch) so a stale detail page is never shown on top of new content.
+    var openDetailKey by remember { mutableStateOf<String?>(null) }
+
     // Reset the active tab whenever a new page loads (e.g. after a language change).
     LaunchedEffect(docPage) {
         if (docPage != null && (selectedTabKey == null || docPage.tabs.none { it.key == selectedTabKey })) {
             selectedTabKey = docPage.tabs.firstOrNull()?.key
         }
+        openDetailKey = null
+    }
+
+    if (openDetailKey != null) {
+        DocDetailScreen(
+            detailKey = openDetailKey!!,
+            currentLanguage = currentLanguage,
+            translations = t,
+            onBack = { openDetailKey = null }
+        )
+        return
     }
 
     Column(modifier = Modifier.fillMaxSize()) {
@@ -186,11 +204,16 @@ fun DocumentationScreen(
                     val activeTab = filteredTabs.find { it.key == selectedTabKey } ?: filteredTabs.firstOrNull()
                     if (activeTab != null) {
                         LazyColumn(
-                            contentPadding = PaddingValues(start = 20.dp, end = 20.dp, bottom = 100.dp),
+                            // Bumped from 100.dp: the last block in a tab (often exactly this
+                            // kind of LinkLine) could end up positioned right underneath the
+                            // floating bottom nav bar on some devices/insets, which both hid it
+                            // visually and blocked its touches - this padding is now generous
+                            // enough that the last item always clears the nav bar entirely.
+                            contentPadding = PaddingValues(start = 20.dp, end = 20.dp, bottom = 150.dp),
                             verticalArrangement = Arrangement.spacedBy(10.dp)
                         ) {
                             items(activeTab.blocks) { block ->
-                                DocBlockView(block, theme, t)
+                                DocBlockView(block, theme, t, onOpenNativeDetail = { key -> openDetailKey = key })
                             }
                         }
                     }
@@ -219,7 +242,12 @@ private fun blockTextOf(tab: DocTab): String = buildString {
 }
 
 @Composable
-private fun DocBlockView(block: DocBlock, theme: com.hackeros.app.data.model.AppTheme, translations: Translations) {
+private fun DocBlockView(
+    block: DocBlock,
+    theme: com.hackeros.app.data.model.AppTheme,
+    translations: Translations,
+    onOpenNativeDetail: (String) -> Unit = {}
+) {
     when (block) {
         is DocBlock.Heading2 -> Text(
             block.text, fontSize = 19.sp, fontWeight = FontWeight.Bold,
@@ -266,7 +294,18 @@ private fun DocBlockView(block: DocBlock, theme: com.hackeros.app.data.model.App
         }
         is DocBlock.Command -> CommandBlockView(block.text, theme, translations)
         is DocBlock.CodeSample -> CodeSampleView(block.text, theme, translations)
-        is DocBlock.LinkLine -> LinkLineView(block.labelHtml, block.url, theme)
+        is DocBlock.LinkLine -> LinkLineView(
+            labelHtml = block.labelHtml,
+            url = block.url,
+            theme = theme,
+            isNative = block.nativeDetailKey != null,
+            onClick = {
+                if (block.nativeDetailKey != null) {
+                    onOpenNativeDetail(block.nativeDetailKey)
+                    true
+                } else false
+            }
+        )
         is DocBlock.ToolsTable -> ToolsTableView(block.rows, theme)
         DocBlock.Divider -> HorizontalDivider(color = Color.White.copy(alpha = 0.06f))
     }
@@ -316,16 +355,37 @@ private fun CodeSampleView(code: String, theme: com.hackeros.app.data.model.AppT
 }
 
 @Composable
-private fun LinkLineView(labelHtml: String, url: String, theme: com.hackeros.app.data.model.AppTheme) {
+private fun LinkLineView(
+    labelHtml: String,
+    url: String,
+    theme: com.hackeros.app.data.model.AppTheme,
+    isNative: Boolean = false,
+    onClick: () -> Boolean = { false }
+) {
     val uriHandler = androidx.compose.ui.platform.LocalUriHandler.current
     Row(
         modifier = Modifier
-            .clickable { try { uriHandler.openUri(url) } catch (_: Exception) {} }
-            .padding(vertical = 2.dp),
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(8.dp))
+            .clickable {
+                // onClick() returns true when this link was handled natively in-app (see
+                // DocBlock.LinkLine.nativeDetailKey) - the external browser is only ever a
+                // fallback for links that don't have a native destination.
+                if (!onClick()) {
+                    try { uriHandler.openUri(url) } catch (_: Exception) {}
+                }
+            }
+            // A larger touch target than the text itself, and enough vertical padding that
+            // this row can never end up sitting flush against - or clipped by - the bottom
+            // nav bar even as the very last item in a tab.
+            .padding(vertical = 10.dp, horizontal = 2.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(6.dp)
     ) {
-        Icon(Icons.Default.OpenInNew, null, tint = theme.primaryColor(), modifier = Modifier.size(13.dp))
+        Icon(
+            if (isNative) Icons.Default.ArrowForward else Icons.Default.OpenInNew,
+            null, tint = theme.primaryColor(), modifier = Modifier.size(13.dp)
+        )
         InlineHtmlText(html = labelHtml, color = theme.primaryColor(), fontSize = 12.sp)
     }
 }
@@ -357,4 +417,116 @@ private fun copyToClipboard(context: Context, text: String, translations: Transl
     val cm = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
     cm.setPrimaryClip(ClipData.newPlainText("command", text))
     Toast.makeText(context, translations.toast_copied, Toast.LENGTH_SHORT).show()
+}
+
+/**
+ * A fully native, in-app "detail" sub-page for a documentation link (see
+ * DocBlock.LinkLine.nativeDetailKey / DocContentParser.detailTabsFor). Tapping the link that
+ * opens this never leaves the app, never opens a browser tab, and doesn't use any WebView - this
+ * whole screen is plain Compose UI, exactly like the rest of the Documentation tab. It has its
+ * own small tab bar (reusing the same look as the main doc screen) plus a back button that
+ * simply clears the local navigation state - nothing "teleports" anywhere.
+ */
+@Composable
+private fun DocDetailScreen(
+    detailKey: String,
+    currentLanguage: Language,
+    translations: Translations,
+    onBack: () -> Unit
+) {
+    val theme = LocalAppTheme.current
+    val t = translations
+    val tabs = remember(detailKey) {
+        com.hackeros.app.data.docs.DocContentParser.detailTabsFor(detailKey).orEmpty()
+    }
+    val title = remember(detailKey) { com.hackeros.app.data.docs.DocContentParser.detailTitleFor(detailKey) }
+    var selectedTabKey by remember(detailKey) { mutableStateOf(tabs.firstOrNull()?.key) }
+    val activeTab = tabs.find { it.key == selectedTabKey } ?: tabs.firstOrNull()
+
+    Column(modifier = Modifier.fillMaxSize()) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(start = 12.dp, end = 24.dp, top = 8.dp, bottom = 4.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            IconButton(onClick = onBack) {
+                Icon(Icons.Default.ArrowBack, contentDescription = t.doc_detail_back, tint = Color.White)
+            }
+            Column(modifier = Modifier.padding(start = 4.dp)) {
+                Text(
+                    text = title,
+                    fontFamily = FontFamily.Monospace,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 22.sp,
+                    color = Color.White
+                )
+                Text(
+                    text = t.doc_detail_native_notice,
+                    fontSize = 11.sp,
+                    color = theme.mutedColor()
+                )
+            }
+        }
+
+        if (currentLanguage != Language.PL) {
+            Box(Modifier.padding(horizontal = 20.dp, vertical = 6.dp)) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(10.dp))
+                        .background(theme.primaryColor().copy(alpha = 0.08f))
+                        .border(1.dp, theme.primaryColor().copy(alpha = 0.25f), RoundedCornerShape(10.dp))
+                        .padding(horizontal = 14.dp, vertical = 10.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Icon(Icons.Default.Info, null, tint = theme.primaryColor(), modifier = Modifier.size(14.dp))
+                    Text(t.doc_detail_pl_only_notice, fontSize = 11.sp, color = theme.primaryColor())
+                }
+            }
+        }
+
+        if (tabs.isEmpty()) {
+            Box(Modifier.fillMaxWidth().padding(24.dp), contentAlignment = Alignment.Center) {
+                Text(t.doc_no_search_results, color = theme.mutedColor(), fontSize = 12.sp)
+            }
+            return@Column
+        }
+
+        LazyRow(
+            contentPadding = PaddingValues(horizontal = 20.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            modifier = Modifier.padding(bottom = 12.dp)
+        ) {
+            items(tabs, key = { it.key }) { tab ->
+                val active = tab.key == selectedTabKey
+                Box(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(20.dp))
+                        .background(if (active) theme.primaryColor() else Color.White.copy(alpha = 0.06f))
+                        .clickable { selectedTabKey = tab.key }
+                        .padding(horizontal = 16.dp, vertical = 8.dp)
+                ) {
+                    Text(
+                        tab.label,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = if (active) theme.backgroundColor() else theme.mutedColor()
+                    )
+                }
+            }
+        }
+
+        if (activeTab != null) {
+            LazyColumn(
+                contentPadding = PaddingValues(start = 20.dp, end = 20.dp, bottom = 150.dp),
+                verticalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                items(activeTab.blocks) { block ->
+                    DocBlockView(block, theme, t)
+                }
+            }
+        }
+    }
 }
