@@ -1,1 +1,78 @@
-
+{
+  "games": [
+    {
+      "id": "bark-squadron",
+      "name": "Bark Squadron",
+      "author": "HackerOS Team",
+      "shortDescription": "Top-down arcade shooter starring the HackerOS mascot",
+      "description": "A fast, top-down arcade shooter built for HackerOS. Fly through procedurally generated sectors, upgrade your ship between runs and chase the leaderboard. Fully offline, no ads, no tracking.",
+      "version": "1.2.0",
+      "category": "Arcade",
+      "iconUrl": "https://raw.githubusercontent.com/HackerOS-Linux-System/HackerOS-Games/main/bark-squadron/icon.png",
+      "screenshots": [
+        "https://raw.githubusercontent.com/HackerOS-Linux-System/HackerOS-Games/main/bark-squadron/screenshot1.png",
+        "https://raw.githubusercontent.com/HackerOS-Linux-System/HackerOS-Games/main/bark-squadron/screenshot2.png"
+      ],
+      "installType": "apk",
+      "downloadUrl": "https://github.com/HackerOS-Linux-System/HackerOS-Games/releases/download/bark-squadron-v1.2.0/bark-squadron.apk",
+      "downloadSize": 24500000,
+      "checksumUrl": "https://github.com/HackerOS-Linux-System/HackerOS-Games/releases/download/bark-squadron-v1.2.0/bark-squadron.apk.sha256",
+      "packageName": "com.hackeros.games.barksquadron",
+      "rating": 4.7,
+      "sourceUrl": "https://github.com/HackerOS-Linux-System/HackerOS-Games",
+      "license": "GPL-3.0",
+      "updatedAt": "2026-07-20"
+    },
+    {
+      "id": "root-runner",
+      "name": "Root Runner",
+      "author": "Community",
+      "shortDescription": "Endless terminal-themed runner - dodge firewalls, grab root",
+      "description": "An endless runner where you play a packet racing down a terminal, dodging firewalls and IDS alerts to reach root. Prebuilt release straight from the project's GitHub Releases page, verified against its published checksum before install.",
+      "version": "0.9.4",
+      "category": "Arcade",
+      "iconUrl": "https://raw.githubusercontent.com/HackerOS-Linux-System/HackerOS-Games/main/root-runner/icon.png",
+      "screenshots": [
+        "https://raw.githubusercontent.com/HackerOS-Linux-System/HackerOS-Games/main/root-runner/screenshot1.png"
+      ],
+      "installType": "apk",
+      "downloadUrl": "https://github.com/HackerOS-Linux-System/Root-Runner/releases/download/v0.9.4/root-runner-release.apk",
+      "downloadSize": 18200000,
+      "checksumUrl": "https://github.com/HackerOS-Linux-System/Root-Runner/releases/download/v0.9.4/root-runner-release.apk.sha256",
+      "packageName": "com.hackeros.games.rootrunner",
+      "rating": 4.3,
+      "sourceUrl": "https://github.com/HackerOS-Linux-System/Root-Runner",
+      "license": "MIT",
+      "updatedAt": "2026-08-02"
+    },
+    {
+      "id": "hackeros-quest",
+      "name": "HackerOS Quest",
+      "author": "Community",
+      "shortDescription": "Open-source ASCII roguelike - build it yourself from source",
+      "description": "A terminal-style ASCII roguelike built with Hacker Lang and Rust. This one is source-only for now - there's no prebuilt package yet, so instead of a normal install button you'll get the repository and the exact clone/build commands to run it yourself (e.g. from a HackerOS terminal).",
+      "version": "main",
+      "category": "Roguelike",
+      "iconUrl": "https://raw.githubusercontent.com/HackerOS-Linux-System/HackerOS-Quest/main/icon.png",
+      "screenshots": [],
+      "installType": "github_source",
+      "downloadUrl": "",
+      "downloadSize": 0,
+      "checksumUrl": null,
+      "packageName": null,
+      "rating": 4.1,
+      "sourceUrl": "https://github.com/HackerOS-Linux-System/HackerOS-Quest",
+      "license": "GPL-3.0",
+      "updatedAt": "2026-08-15",
+      "repoOwner": "HackerOS-Linux-System",
+      "repoName": "HackerOS-Quest",
+      "repoBranch": "main",
+      "buildCommands": [
+        "git clone --branch main https://github.com/HackerOS-Linux-System/HackerOS-Quest.git",
+        "cd HackerOS-Quest",
+        "hl compile src/main.hl --release -o hackeros-quest",
+        "./hackeros-quest"
+      ]
+    }
+  ]
+}
