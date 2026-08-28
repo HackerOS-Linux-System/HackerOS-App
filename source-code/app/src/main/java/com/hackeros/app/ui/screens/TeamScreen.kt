@@ -2,13 +2,15 @@ package com.hackeros.app.ui.screens
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Memory
+import androidx.compose.material.icons.automirrored.filled.Send
+import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.Shield
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
@@ -151,7 +153,11 @@ fun TeamScreen(translations: Translations) {
 
         Spacer(Modifier.height(16.dp))
 
-        // Info box
+        // Contact card (v0.7) - replaces the old generic "HackerOS is a project..." blurb with
+        // an actual way to reach the team. Sending a message straight from this screen is a
+        // planned future addition; for now this opens the device's email app pre-addressed.
+        val context = androidx.compose.ui.platform.LocalContext.current
+        val contactEmail = "hackeros068@gmail.com"
         Box(
             modifier = Modifier
                 .fillMaxWidth()
@@ -161,21 +167,74 @@ fun TeamScreen(translations: Translations) {
                 .border(1.dp, Color.White.copy(alpha = 0.05f), RoundedCornerShape(16.dp))
                 .padding(20.dp)
         ) {
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(14.dp)
-            ) {
-                Icon(
-                    Icons.Default.Memory,
-                    contentDescription = null,
-                    tint = theme.primaryColor(),
-                    modifier = Modifier.size(28.dp).padding(top = 2.dp)
-                )
+            Column {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    Icon(
+                        Icons.Default.Email,
+                        contentDescription = null,
+                        tint = theme.primaryColor(),
+                        modifier = Modifier.size(20.dp)
+                    )
+                    Text(
+                        text = t.team_contact_title,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 14.sp,
+                        color = Color.White
+                    )
+                }
+                Spacer(Modifier.height(6.dp))
                 Text(
-                    text = t.team_description,
+                    text = t.team_contact_desc,
                     fontSize = 12.sp,
-                    fontFamily = FontFamily.Monospace,
                     color = theme.mutedColor(),
-                    lineHeight = 18.sp
+                    lineHeight = 17.sp
+                )
+                Spacer(Modifier.height(12.dp))
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(10.dp))
+                        .background(theme.primaryColor().copy(alpha = 0.08f))
+                        .border(1.dp, theme.primaryColor().copy(alpha = 0.25f), RoundedCornerShape(10.dp))
+                        .clickable {
+                            try {
+                                val intent = android.content.Intent(android.content.Intent.ACTION_SENDTO).apply {
+                                    data = android.net.Uri.parse("mailto:$contactEmail")
+                                }
+                                context.startActivity(intent)
+                            } catch (_: Exception) {
+                                val cm = context.getSystemService(android.content.Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
+                                cm.setPrimaryClip(android.content.ClipData.newPlainText("email", contactEmail))
+                                android.widget.Toast.makeText(context, t.toast_copied, android.widget.Toast.LENGTH_SHORT).show()
+                            }
+                        }
+                        .padding(horizontal = 14.dp, vertical = 12.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Text(
+                        text = contactEmail,
+                        fontFamily = FontFamily.Monospace,
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = theme.primaryColor(),
+                        modifier = Modifier.weight(1f)
+                    )
+                    Icon(
+                        Icons.AutoMirrored.Filled.Send,
+                        contentDescription = null,
+                        tint = theme.primaryColor(),
+                        modifier = Modifier.size(16.dp)
+                    )
+                }
+                Spacer(Modifier.height(10.dp))
+                Text(
+                    text = t.team_contact_future_note,
+                    fontSize = 10.sp,
+                    color = theme.mutedColor().copy(alpha = 0.7f)
                 )
             }
         }
