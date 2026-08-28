@@ -202,7 +202,7 @@ fun WallpapersScreen(
             }
             else -> {
                 if (fromCache) {
-                    Box(Modifier.padding(horizontal = 20.dp, top = 0.dp, bottom = 12.dp)) {
+                    Box(Modifier.padding(start = 20.dp, top = 0.dp, end = 20.dp, bottom = 12.dp)) {
                         OfflineBanner(text = t.offline_cached_banner, primaryColor = theme.primaryColor())
                     }
                 }
