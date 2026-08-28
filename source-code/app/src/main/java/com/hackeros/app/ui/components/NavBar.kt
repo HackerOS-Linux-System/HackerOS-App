@@ -38,20 +38,26 @@ fun HackerOSNavBar(
     onScreenChange: (AppScreen) -> Unit,
                    translations: Translations,
                    docsEnabled: Boolean = true,
-                   gamesStoreEnabled: Boolean = true
+                   gamesStoreEnabled: Boolean = true,
+                   releasesEnabled: Boolean = true,
+                   wallpapersEnabled: Boolean = true,
+                   galleryEnabled: Boolean = true,
+                   teamEnabled: Boolean = true
 ) {
     val theme = LocalAppTheme.current
     val bgColor = Color(theme.background)
     val primaryColor = Color(theme.primary)
     val mutedColor = Color(0xFF94A3B8)
 
+    // Settings is intentionally never conditional here - it must always stay reachable so the
+    // user can re-enable anything they've hidden via the toggles in Settings > Sections.
     val navItems = listOfNotNull(
-        NavItem(AppScreen.RELEASES, Icons.Default.List, translations.nav_releases),
-                          NavItem(AppScreen.WALLPAPERS, Icons.Default.Image, translations.nav_wallpapers),
-                          NavItem(AppScreen.GALLERY, Icons.Default.CameraAlt, translations.nav_gallery),
+        if (releasesEnabled) NavItem(AppScreen.RELEASES, Icons.Default.List, translations.nav_releases) else null,
+                          if (wallpapersEnabled) NavItem(AppScreen.WALLPAPERS, Icons.Default.Image, translations.nav_wallpapers) else null,
+                          if (galleryEnabled) NavItem(AppScreen.GALLERY, Icons.Default.CameraAlt, translations.nav_gallery) else null,
                           if (docsEnabled) NavItem(AppScreen.DOCS, Icons.Default.MenuBook, translations.nav_docs) else null,
                           if (gamesStoreEnabled) NavItem(AppScreen.GAMES_STORE, Icons.Default.SportsEsports, translations.nav_games_store) else null,
-                          NavItem(AppScreen.TEAM, Icons.Default.Group, translations.nav_team),
+                          if (teamEnabled) NavItem(AppScreen.TEAM, Icons.Default.Group, translations.nav_team) else null,
                           NavItem(AppScreen.SETTINGS, Icons.Default.Settings, translations.nav_config),
     )
 
