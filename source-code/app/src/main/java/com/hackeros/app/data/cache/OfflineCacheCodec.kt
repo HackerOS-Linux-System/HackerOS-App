@@ -85,4 +85,35 @@ object OfflineCacheCodec {
             emptyList()
         }
     }
+
+    fun wallpapersToJson(wallpapers: List<com.hackeros.app.WallpaperItem>): String {
+        val arr = JSONArray()
+        wallpapers.forEach { wp ->
+            arr.put(
+                JSONObject().apply {
+                    put("id", wp.id)
+                    put("name", wp.name)
+                    put("url", wp.url)
+                }
+            )
+        }
+        return arr.toString()
+    }
+
+    fun wallpapersFromJson(json: String?): List<com.hackeros.app.WallpaperItem> {
+        if (json.isNullOrBlank()) return emptyList()
+        return try {
+            val arr = JSONArray(json)
+            (0 until arr.length()).map { i ->
+                val o = arr.getJSONObject(i)
+                com.hackeros.app.WallpaperItem(
+                    id = o.optString("id"),
+                    name = o.optString("name"),
+                    url = o.optString("url")
+                )
+            }
+        } catch (_: Exception) {
+            emptyList()
+        }
+    }
 }
