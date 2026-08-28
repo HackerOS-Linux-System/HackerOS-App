@@ -52,6 +52,14 @@ fun SettingsScreen(
     onToggleDocsSection: (Boolean) -> Unit,
     gamesStoreSectionEnabled: Boolean,
     onToggleGamesStoreSection: (Boolean) -> Unit,
+    releasesSectionEnabled: Boolean,
+    onToggleReleasesSection: (Boolean) -> Unit,
+    wallpapersSectionEnabled: Boolean,
+    onToggleWallpapersSection: (Boolean) -> Unit,
+    gallerySectionEnabled: Boolean,
+    onToggleGallerySection: (Boolean) -> Unit,
+    teamSectionEnabled: Boolean,
+    onToggleTeamSection: (Boolean) -> Unit,
     customThemeColors: com.hackeros.app.data.model.AppTheme?,
     onSaveCustomTheme: (primary: Long, background: Long, card: Long) -> Unit,
     translations: Translations
@@ -390,41 +398,19 @@ fun SettingsScreen(
         SectionCard(title = t.pref_sections_title, icon = Icons.Default.ViewModule, sectionBg, sectionBorder, cardShape, theme.primaryColor()) {
             Column {
                 Text(t.pref_sections_desc, fontSize = 10.sp, color = theme.mutedColor(), modifier = Modifier.padding(bottom = 10.dp))
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(t.pref_show_docs_section, fontSize = 12.sp, color = theme.textColor())
-                    Switch(
-                        checked = docsSectionEnabled,
-                        onCheckedChange = onToggleDocsSection,
-                        colors = SwitchDefaults.colors(
-                            checkedThumbColor = Color.White,
-                            checkedTrackColor = theme.primaryColor(),
-                            uncheckedThumbColor = Color.White,
-                            uncheckedTrackColor = Color(0xFF374151)
-                        )
-                    )
-                }
+                SectionToggleRow(t.pref_show_releases_section, releasesSectionEnabled, onToggleReleasesSection, theme)
                 Spacer(Modifier.height(10.dp))
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(t.pref_show_games_store_section, fontSize = 12.sp, color = theme.textColor())
-                    Switch(
-                        checked = gamesStoreSectionEnabled,
-                        onCheckedChange = onToggleGamesStoreSection,
-                        colors = SwitchDefaults.colors(
-                            checkedThumbColor = Color.White,
-                            checkedTrackColor = theme.primaryColor(),
-                            uncheckedThumbColor = Color.White,
-                            uncheckedTrackColor = Color(0xFF374151)
-                        )
-                    )
-                }
+                SectionToggleRow(t.pref_show_wallpapers_section, wallpapersSectionEnabled, onToggleWallpapersSection, theme)
+                Spacer(Modifier.height(10.dp))
+                SectionToggleRow(t.pref_show_gallery_section, gallerySectionEnabled, onToggleGallerySection, theme)
+                Spacer(Modifier.height(10.dp))
+                SectionToggleRow(t.pref_show_docs_section, docsSectionEnabled, onToggleDocsSection, theme)
+                Spacer(Modifier.height(10.dp))
+                SectionToggleRow(t.pref_show_games_store_section, gamesStoreSectionEnabled, onToggleGamesStoreSection, theme)
+                Spacer(Modifier.height(10.dp))
+                SectionToggleRow(t.pref_show_team_section, teamSectionEnabled, onToggleTeamSection, theme)
+                Spacer(Modifier.height(8.dp))
+                Text(t.pref_sections_last_enabled_hint, fontSize = 9.sp, color = theme.mutedColor())
             }
         }
 
@@ -669,6 +655,32 @@ private fun StatusBadge(text: String, color: Color) {
             color = color,
             letterSpacing = 0.5.sp,
             modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+        )
+    }
+}
+
+@Composable
+private fun SectionToggleRow(
+    label: String,
+    checked: Boolean,
+    onCheckedChange: (Boolean) -> Unit,
+    theme: com.hackeros.app.data.model.AppTheme
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(label, fontSize = 12.sp, color = theme.textColor())
+        Switch(
+            checked = checked,
+            onCheckedChange = onCheckedChange,
+            colors = SwitchDefaults.colors(
+                checkedThumbColor = Color.White,
+                checkedTrackColor = theme.primaryColor(),
+                uncheckedThumbColor = Color.White,
+                uncheckedTrackColor = Color(0xFF374151)
+            )
         )
     }
 }
