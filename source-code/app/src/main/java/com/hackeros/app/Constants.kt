@@ -69,6 +69,21 @@ object Constants {
     const val GAMES_STORE_JSON_URL =
         "https://raw.githubusercontent.com/HackerOS-Linux-System/HackerOS-App/main/games-store/community-games.json"
 
+    // --- Articles (v0.8) --------------------------------------------------------------------
+    //
+    // The website's Articles section is data-driven: `articles/index.js` lists the published
+    // article ids, and each `articles/<id>.js` holds one article (strict JSON assigned to a
+    // window global, so the site can load them with plain <script> tags). The app reads those
+    // very same files and renders them natively - publishing a new article on the website is
+    // enough for it to appear here, no app update needed. See data/articles/ArticleParser.kt.
+    const val ARTICLES_BASE_URL =
+        "https://raw.githubusercontent.com/HackerOS-Linux-System/HackerOS-Website/main/articles/"
+    const val ARTICLES_INDEX_URL = ARTICLES_BASE_URL + "index.js"
+    fun articleFileUrl(file: String) = ARTICLES_BASE_URL + file
+
+    // Optional "open on website" escape hatch, same idea as DOCUMENTATION_WEB_URL.
+    const val ARTICLES_WEB_URL = "https://hackeros-linux-system.github.io/HackerOS-Website/articles.html"
+
     // --- Wallpapers -----------------------------------------------------------------------
     //
     // v0.7: previously a small hardcoded list with invented names ("Cyber Grid", "Neon
