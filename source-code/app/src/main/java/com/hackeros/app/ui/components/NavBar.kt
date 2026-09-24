@@ -39,6 +39,7 @@ fun HackerOSNavBar(
                    translations: Translations,
                    docsEnabled: Boolean = true,
                    gamesStoreEnabled: Boolean = true,
+                   articlesEnabled: Boolean = true,
                    releasesEnabled: Boolean = true,
                    wallpapersEnabled: Boolean = true,
                    galleryEnabled: Boolean = true,
@@ -56,6 +57,7 @@ fun HackerOSNavBar(
                           if (wallpapersEnabled) NavItem(AppScreen.WALLPAPERS, Icons.Default.Image, translations.nav_wallpapers) else null,
                           if (galleryEnabled) NavItem(AppScreen.GALLERY, Icons.Default.CameraAlt, translations.nav_gallery) else null,
                           if (docsEnabled) NavItem(AppScreen.DOCS, Icons.Default.MenuBook, translations.nav_docs) else null,
+                          if (articlesEnabled) NavItem(AppScreen.ARTICLES, Icons.Default.Article, translations.nav_articles) else null,
                           if (gamesStoreEnabled) NavItem(AppScreen.GAMES_STORE, Icons.Default.SportsEsports, translations.nav_games_store) else null,
                           if (teamEnabled) NavItem(AppScreen.TEAM, Icons.Default.Group, translations.nav_team) else null,
                           NavItem(AppScreen.SETTINGS, Icons.Default.Settings, translations.nav_config),
@@ -129,6 +131,10 @@ fun HackerOSNavBar(
                                            maxLines = 1
                                       )
                                   },
+                                  // With 8 destinations the bar is too tight for every label to fit
+                                  // (esp. in longer languages), so beyond 7 only the active item
+                                  // keeps its label.
+                                  alwaysShowLabel = navItems.size <= 7,
                                   colors = NavigationBarItemDefaults.colors(
                                       indicatorColor = Color.Transparent
                                   ),
