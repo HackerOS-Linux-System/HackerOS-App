@@ -58,6 +58,11 @@ class PreferencesRepository(private val context: Context) {
         // instead of being hardcoded in the app.
         val CACHED_WALLPAPERS_JSON_KEY = stringPreferencesKey("hackeros_cached_wallpapers_json")
 
+        // v0.8: Articles section - visibility toggle (default on) and offline cache of the last
+        // successfully fetched articles bundle (index + every article, all languages).
+        val ARTICLES_SECTION_ENABLED_KEY = booleanPreferencesKey("hackeros_articles_section_enabled")
+        val CACHED_ARTICLES_JSON_KEY = stringPreferencesKey("hackeros_cached_articles_json")
+
         // Offline cache for the raw documentation JS source, so a previously-loaded page can
         // still be parsed and shown fully offline.
         val CACHED_DOC_JS_KEY = stringPreferencesKey("hackeros_cached_doc_js")
@@ -222,6 +227,24 @@ class PreferencesRepository(private val context: Context) {
 
     suspend fun saveCachedWallpapersJson(json: String) {
         context.dataStore.edit { it[CACHED_WALLPAPERS_JSON_KEY] = json }
+    }
+
+    // --- Articles (v0.8) -----------------------------------------------------------------------
+
+    val articlesSectionEnabledFlow: Flow<Boolean> = context.dataStore.data.map { prefs ->
+        prefs[ARTICLES_SECTION_ENABLED_KEY] ?: true
+    }
+
+    suspend fun saveArticlesSectionEnabled(enabled: Boolean) {
+        context.dataStore.edit { it[ARTICLES_SECTION_ENABLED_KEY] = enabled }
+    }
+
+    val cachedArticlesJsonFlow: Flow<String?> = context.dataStore.data.map { prefs ->
+        prefs[CACHED_ARTICLES_JSON_KEY]
+    }
+
+    suspend fun saveCachedArticlesJson(json: String) {
+        context.dataStore.edit { it[CACHED_ARTICLES_JSON_KEY] = json }
     }
 
     // --- Documentation offline cache --------------------------------------------------------
