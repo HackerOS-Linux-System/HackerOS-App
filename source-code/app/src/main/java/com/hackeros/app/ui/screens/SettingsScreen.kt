@@ -50,6 +50,8 @@ fun SettingsScreen(
     onInstallUpdate: () -> Unit,
     docsSectionEnabled: Boolean,
     onToggleDocsSection: (Boolean) -> Unit,
+    articlesSectionEnabled: Boolean,
+    onToggleArticlesSection: (Boolean) -> Unit,
     gamesStoreSectionEnabled: Boolean,
     onToggleGamesStoreSection: (Boolean) -> Unit,
     releasesSectionEnabled: Boolean,
@@ -405,6 +407,8 @@ fun SettingsScreen(
                 SectionToggleRow(t.pref_show_gallery_section, gallerySectionEnabled, onToggleGallerySection, theme)
                 Spacer(Modifier.height(10.dp))
                 SectionToggleRow(t.pref_show_docs_section, docsSectionEnabled, onToggleDocsSection, theme)
+                Spacer(Modifier.height(10.dp))
+                SectionToggleRow(t.pref_show_articles_section, articlesSectionEnabled, onToggleArticlesSection, theme)
                 Spacer(Modifier.height(10.dp))
                 SectionToggleRow(t.pref_show_games_store_section, gamesStoreSectionEnabled, onToggleGamesStoreSection, theme)
                 Spacer(Modifier.height(10.dp))
