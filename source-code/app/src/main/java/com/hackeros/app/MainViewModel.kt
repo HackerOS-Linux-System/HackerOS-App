@@ -3,6 +3,8 @@ package com.hackeros.app
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.hackeros.app.data.articles.ArticleParser
+import com.hackeros.app.data.articles.ArticlesData
 import com.hackeros.app.data.cache.OfflineCacheCodec
 import com.hackeros.app.data.docs.DocContentParser
 import com.hackeros.app.data.docs.DocPage
@@ -21,6 +23,9 @@ import com.hackeros.app.data.repository.PreferencesRepository
 import com.hackeros.app.utils.ApkUpdater
 import com.hackeros.app.worker.ReleaseNotificationScheduler
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -148,6 +153,28 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     private val _teamSectionEnabled = MutableStateFlow(true)
     val teamSectionEnabled: StateFlow<Boolean> = _teamSectionEnabled.asStateFlow()
 
+    // v0.8: Articles section.
+    private val _articlesSectionEnabled = MutableStateFlow(true)
+    val articlesSectionEnabled: StateFlow<Boolean> = _articlesSectionEnabled.asStateFlow()
+
+    // --- Articles (v0.8): fetched from the website's articles/ data files, rendered natively ---
+    private val _articles = MutableStateFlow<ArticlesData?>(null)
+    val articles: StateFlow<ArticlesData?> = _articles.asStateFlow()
+
+    private val _articlesLoading = MutableStateFlow(true)
+    val articlesLoading: StateFlow<Boolean> = _articlesLoading.asStateFlow()
+
+    private val _articlesError = MutableStateFlow(false)
+    val articlesError: StateFlow<Boolean> = _articlesError.asStateFlow()
+
+    private val _articlesFromCache = MutableStateFlow(false)
+    val articlesFromCache: StateFlow<Boolean> = _articlesFromCache.asStateFlow()
+
+    // Id of the article currently open in the reader, or null while the list is showing. Kept in
+    // the ViewModel so it survives switching tabs and configuration changes.
+    private val _openArticleId = MutableStateFlow<String?>(null)
+    val openArticleId: StateFlow<String?> = _openArticleId.asStateFlow()
+
     // --- Documentation (native, parsed from the website's own data file - no WebView) ---
     private val _docPage = MutableStateFlow<DocPage?>(null)
     val docPage: StateFlow<DocPage?> = _docPage.asStateFlow()
@@ -183,6 +210,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         fetchGallery()
         fetchWallpapers()
         fetchDocs()
+        fetchArticles()
         fetchGamesStore()
     }
 
@@ -201,6 +229,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             _wallpapersSectionEnabled.value = prefs.wallpapersSectionEnabledFlow.first()
             _gallerySectionEnabled.value = prefs.gallerySectionEnabledFlow.first()
             _teamSectionEnabled.value = prefs.teamSectionEnabledFlow.first()
+            _articlesSectionEnabled.value = prefs.articlesSectionEnabledFlow.first()
             // Keep the background worker in sync with the saved preference - important after
             // an app reinstall/update, where WorkManager's own schedule may have been reset.
             if (_notificationsEnabled.value) {
@@ -299,6 +328,10 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         enabled, _docsSectionEnabled, AppScreen.DOCS
     ) { viewModelScope.launch { prefs.saveDocsSectionEnabled(it) } }
 
+    fun setArticlesSectionEnabled(enabled: Boolean) = setSectionEnabled(
+        enabled, _articlesSectionEnabled, AppScreen.ARTICLES
+    ) { viewModelScope.launch { prefs.saveArticlesSectionEnabled(it) } }
+
     fun setGamesStoreSectionEnabled(enabled: Boolean) = setSectionEnabled(
         enabled, _gamesStoreSectionEnabled, AppScreen.GAMES_STORE
     ) { viewModelScope.launch { prefs.saveGamesStoreSectionEnabled(it) } }
@@ -346,7 +379,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         if (!enabled) {
             val otherwiseEnabledCount = listOf(
                 _releasesSectionEnabled, _wallpapersSectionEnabled, _gallerySectionEnabled,
-                _docsSectionEnabled, _gamesStoreSectionEnabled, _teamSectionEnabled
+                _docsSectionEnabled, _articlesSectionEnabled, _gamesStoreSectionEnabled, _teamSectionEnabled
             ).count { it !== flow && it.value }
             if (otherwiseEnabledCount == 0) {
                 _sectionToggleBlocked.value = true
@@ -367,6 +400,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         _wallpapersSectionEnabled.value -> AppScreen.WALLPAPERS
         _gallerySectionEnabled.value -> AppScreen.GALLERY
         _docsSectionEnabled.value -> AppScreen.DOCS
+        _articlesSectionEnabled.value -> AppScreen.ARTICLES
         _gamesStoreSectionEnabled.value -> AppScreen.GAMES_STORE
         _teamSectionEnabled.value -> AppScreen.TEAM
         else -> AppScreen.SETTINGS
@@ -653,6 +687,62 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 }
             } finally {
                 _docLoading.value = false
+            }
+        }
+    }
+
+    // --- Articles ----------------------------------------------------------------------------
+
+    fun openArticle(id: String) { _openArticleId.value = id }
+    fun closeArticle() { _openArticleId.value = null }
+
+    /**
+     * Downloads the website's `articles/index.js`, then every article file it lists (in parallel),
+     * and stores the strict-JSON result as one offline "bundle". All languages are downloaded
+     * together, so switching the app language never needs another fetch. A single unreachable or
+     * malformed article file is skipped rather than failing the whole list; only if nothing at all
+     * can be fetched do we fall back to the last cached bundle.
+     */
+    fun fetchArticles() {
+        viewModelScope.launch {
+            _articlesLoading.value = true
+            _articlesError.value = false
+            try {
+                val bundle = withContext(Dispatchers.IO) {
+                    val stamp = "?t=${System.currentTimeMillis()}"
+                    val index = ArticleParser.parseIndex(URL(Constants.ARTICLES_INDEX_URL + stamp).readText())
+                        ?: throw IllegalStateException("Could not parse articles index")
+                    val objects = coroutineScope {
+                        index.files.map { (_, file) ->
+                            async {
+                                try {
+                                    ArticleParser.articleJsToJson(URL(Constants.articleFileUrl(file) + stamp).readText())
+                                } catch (_: Exception) {
+                                    null
+                                }
+                            }
+                        }.awaitAll()
+                    }.filterNotNull()
+                    if (objects.isEmpty()) throw IllegalStateException("No articles could be fetched")
+                    ArticleParser.bundle(index, objects)
+                }
+                val parsed = ArticleParser.parseBundle(bundle)
+                if (parsed == null || parsed.articles.isEmpty()) throw IllegalStateException("No articles")
+                _articles.value = parsed
+                _articlesFromCache.value = false
+                prefs.saveCachedArticlesJson(bundle)
+            } catch (e: Exception) {
+                val cached = ArticleParser.parseBundle(prefs.cachedArticlesJsonFlow.first())
+                if (cached != null && cached.articles.isNotEmpty()) {
+                    _articles.value = cached
+                    _articlesFromCache.value = true
+                    _articlesError.value = false
+                } else {
+                    _articlesError.value = true
+                    _articlesFromCache.value = false
+                }
+            } finally {
+                _articlesLoading.value = false
             }
         }
     }
