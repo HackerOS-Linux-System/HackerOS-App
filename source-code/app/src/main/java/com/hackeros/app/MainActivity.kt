@@ -60,6 +60,12 @@ class MainActivity : ComponentActivity() {
                 val showWhatsNew by viewModel.showWhatsNew.collectAsState()
                 val docsSectionEnabled by viewModel.docsSectionEnabled.collectAsState()
                 val gamesStoreSectionEnabled by viewModel.gamesStoreSectionEnabled.collectAsState()
+                val articlesSectionEnabled by viewModel.articlesSectionEnabled.collectAsState()
+                val articles by viewModel.articles.collectAsState()
+                val articlesLoading by viewModel.articlesLoading.collectAsState()
+                val articlesError by viewModel.articlesError.collectAsState()
+                val articlesFromCache by viewModel.articlesFromCache.collectAsState()
+                val openArticleId by viewModel.openArticleId.collectAsState()
                 val releasesSectionEnabled by viewModel.releasesSectionEnabled.collectAsState()
                 val wallpapersSectionEnabled by viewModel.wallpapersSectionEnabled.collectAsState()
                 val gallerySectionEnabled by viewModel.gallerySectionEnabled.collectAsState()
@@ -171,6 +177,18 @@ class MainActivity : ComponentActivity() {
                                         translations = translations,
                                         onRetry = { viewModel.fetchDocs() }
                                     )
+                                    AppScreen.ARTICLES -> if (articlesSectionEnabled) ArticlesScreen(
+                                        data = articles,
+                                        loading = articlesLoading,
+                                        error = articlesError,
+                                        fromCache = articlesFromCache,
+                                        openArticleId = openArticleId,
+                                        currentLanguage = currentLanguage,
+                                        translations = translations,
+                                        onOpenArticle = { viewModel.openArticle(it) },
+                                        onCloseArticle = { viewModel.closeArticle() },
+                                        onRetry = { viewModel.fetchArticles() }
+                                    )
                                     AppScreen.GAMES_STORE -> if (gamesStoreSectionEnabled) GamesStoreScreen(
                                         games = gamesStore,
                                         loading = gamesStoreLoading,
@@ -213,6 +231,8 @@ class MainActivity : ComponentActivity() {
                                                                          onInstallUpdate = { viewModel.installDownloadedUpdate() },
                                                                          docsSectionEnabled = docsSectionEnabled,
                                                                          onToggleDocsSection = { viewModel.setDocsSectionEnabled(it) },
+                                                                         articlesSectionEnabled = articlesSectionEnabled,
+                                                                         onToggleArticlesSection = { viewModel.setArticlesSectionEnabled(it) },
                                                                          gamesStoreSectionEnabled = gamesStoreSectionEnabled,
                                                                          onToggleGamesStoreSection = { viewModel.setGamesStoreSectionEnabled(it) },
                                                                          releasesSectionEnabled = releasesSectionEnabled,
@@ -238,6 +258,7 @@ class MainActivity : ComponentActivity() {
                                            translations = translations,
                                            docsEnabled = docsSectionEnabled,
                                            gamesStoreEnabled = gamesStoreSectionEnabled,
+                                           articlesEnabled = articlesSectionEnabled,
                                            releasesEnabled = releasesSectionEnabled,
                                            wallpapersEnabled = wallpapersSectionEnabled,
                                            galleryEnabled = gallerySectionEnabled,
