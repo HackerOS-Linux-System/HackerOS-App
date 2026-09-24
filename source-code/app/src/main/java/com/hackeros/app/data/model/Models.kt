@@ -31,7 +31,7 @@ data class GalleryImage(
 )
 
 enum class AppScreen {
-    RELEASES, WALLPAPERS, GALLERY, DOCS, GAMES_STORE, TEAM, SETTINGS
+    RELEASES, WALLPAPERS, GALLERY, DOCS, ARTICLES, GAMES_STORE, TEAM, SETTINGS
 }
 
 enum class ThemeId(val themeName: String) {
