@@ -131,6 +131,13 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Select Xcode
+        # macos-14 runners ship several Xcode versions; pin one explicitly instead of relying on
+        # whatever happens to be the default, so this build doesn't silently change behaviour.
+        run: |
+          sudo xcode-select -s /Applications/Xcode_15.4.app
+          xcodebuild -version
+
       - name: Install XcodeGen
         run: brew install xcodegen
 
