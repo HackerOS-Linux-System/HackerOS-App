@@ -79,8 +79,11 @@ fun ArticlesScreen(
 
     BackHandler(enabled = open != null) { onCloseArticle() }
 
-    if (open != null && data != null) {
-        ArticleReader(open, data, lang, theme, translations, onCloseArticle)
+    // `open` can only be non-null when `data` is (it's looked up from data.articles), but the
+    // compiler can't see that through the elvis/firstOrNull chain, hence the explicit `!!`
+    // instead of a redundant `data != null` check.
+    if (open != null) {
+        ArticleReader(open, data!!, lang, theme, translations, onCloseArticle)
     } else {
         ArticleList(data, loading, error, fromCache, lang, theme, translations, onOpenArticle, onRetry)
     }
