@@ -4,6 +4,7 @@ import androidx.compose.foundation.text.ClickableText
 import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalUriHandler
@@ -24,6 +25,21 @@ import androidx.compose.ui.unit.TextUnit
  * tag-to-AnnotatedString converter plus a clickable-link renderer.
  */
 private const val LINK_TAG = "URL"
+
+/**
+ * Lets a screen intercept taps on links inside documentation text. It receives the link's URL and
+ * returns true when it handled it (e.g. opened a native in-app page), in which case the URL is
+ * NOT handed to the browser. The default handles nothing, so every other screen behaves as before.
+ */
+val LocalDocLinkHandler = compositionLocalOf<(String) -> Boolean> { { false } }
+
+/** The documentation text is HTML-escaped where needed (`&lt;`, `&amp;`...); show it as real characters. */
+private fun decodeEntities(s: String): String {
+    if (!s.contains('&')) return s
+    return s.replace("&lt;", "<").replace("&gt;", ">").replace("&quot;", "\"")
+        .replace("&#39;", "'").replace("&apos;", "'").replace("&nbsp;", "\u00A0")
+        .replace("&amp;", "&")
+}
 
 fun parseInlineHtml(html: String, linkColor: Color, codeColor: Color): AnnotatedString {
     val text = html.replace("<br>", "\n").replace("<br/>", "\n").replace("<br />", "\n")
@@ -46,7 +62,7 @@ fun parseInlineHtml(html: String, linkColor: Color, codeColor: Color): Annotated
         while (i < n) {
             if (text[i] == '<') {
                 val close = text.indexOf('>', i)
-                if (close == -1) { append(text.substring(i)); break }
+                if (close == -1) { append(decodeEntities(text.substring(i))); break }
                 val tagContent = text.substring(i + 1, close)
                 val isClosing = tagContent.startsWith("/")
                 val tagName = tagContent.removePrefix("/").trim().substringBefore(' ').lowercase()
@@ -79,7 +95,7 @@ fun parseInlineHtml(html: String, linkColor: Color, codeColor: Color): Annotated
                 i = close + 1
             } else {
                 val next = text.indexOf('<', i).let { if (it == -1) n else it }
-                append(text.substring(i, next))
+                append(decodeEntities(text.substring(i, next)))
                 i = next
             }
         }
@@ -87,8 +103,8 @@ fun parseInlineHtml(html: String, linkColor: Color, codeColor: Color): Annotated
 }
 
 /**
- * Renders documentation text that may contain the limited inline HTML above, with clickable
- * links opening in the device's browser.
+ * Renders documentation text that may contain the limited inline HTML above. Links first go to
+ * [LocalDocLinkHandler] (native in-app pages); only if it declines do they open in the browser.
  */
 @Composable
 fun InlineHtmlText(
@@ -103,6 +119,7 @@ fun InlineHtmlText(
 ) {
     val annotated = parseInlineHtml(html, linkColor, codeColor)
     val uriHandler = LocalUriHandler.current
+    val linkHandler = LocalDocLinkHandler.current
     val hasLinks = annotated.getStringAnnotations(LINK_TAG, 0, annotated.length).isNotEmpty()
 
     val baseStyle = LocalTextStyle.current.merge(
@@ -116,8 +133,9 @@ fun InlineHtmlText(
             style = baseStyle,
             onClick = { offset ->
                 annotated.getStringAnnotations(LINK_TAG, offset, offset).firstOrNull()?.let { ann ->
-                    if (ann.item.isNotBlank()) {
-                        try { uriHandler.openUri(ann.item) } catch (_: Exception) { }
+                    val url = ann.item
+                    if (url.isNotBlank() && !linkHandler(url) && !url.startsWith("hackeros://")) {
+                        try { uriHandler.openUri(url) } catch (_: Exception) { }
                     }
                 }
             }
