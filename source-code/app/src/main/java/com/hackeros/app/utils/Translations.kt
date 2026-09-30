@@ -155,6 +155,8 @@ data class Translations(
     val doc_detail_back: String = "Back",
     val doc_detail_native_notice: String = "Native in-app page - no browser, no WebView",
     val doc_detail_pl_only_notice: String = "This reference is currently only available in Polish (same as the source).",
+    // v0.8: some pages of the website's documentation (e.g. hpm, hnm, GhostFS) are English-only.
+    val doc_detail_en_only_notice: String = "This reference is currently only available in English (same as the source).",
     // Section visibility toggles for the 4 sections that gained the show/hide switch already
     // used by Documentation and Games Store (Releases/Wallpapers/Gallery/Team).
     val pref_show_releases_section: String = "Show Releases",
@@ -309,6 +311,7 @@ val TRANSLATIONS: Map<Language, Translations> = mapOf(
         doc_detail_back = "Wstecz",
         doc_detail_native_notice = "Natywna strona w aplikacji - bez przeglądarki, bez WebView",
         doc_detail_pl_only_notice = "Ta dokumentacja jest na razie dostępna tylko po polsku (tak jak źródło).",
+        doc_detail_en_only_notice = "Ta dokumentacja jest na razie dostępna tylko po angielsku (tak jak źródło).",
         pref_show_releases_section = "Pokaż Wydania",
         pref_show_wallpapers_section = "Pokaż Tapety",
         pref_show_gallery_section = "Pokaż Galerię",
