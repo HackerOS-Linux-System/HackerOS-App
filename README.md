@@ -150,3 +150,13 @@ artifact on the workflow run.
 ## License
 
 See [LICENSE](LICENSE).
+
+
+## Documentation is fully native and always live
+
+Every link in the Documentation tab (H#, Hacker Lang, HackerScript, each tool, the tools index, editions,
+download page) opens as a native in-app page - no browser, no WebView. Nothing is bundled in the APK: pages
+are fetched **live from the official HackerOS website repository**
+(`raw.githubusercontent.com/HackerOS-Linux-System/HackerOS-Website/main/...`), converted on the device by
+`data/docs/DocHtmlConverter.kt`, and cached for offline use. Publish or edit a page on the website and the
+app shows it - no app update needed.
