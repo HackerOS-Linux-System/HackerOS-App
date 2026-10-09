@@ -1,1 +1,247 @@
+name: Build iOS (macOS) - production .ipa
 
+# Builds a SIGNED, production-ready .ipa of the SwiftUI app in ios-ui/ on a macOS runner.
+# Run manually from the Actions tab ("Run workflow").
+#
+# Required repository secrets (Settings -> Secrets and variables -> Actions):
+#   IOS_CERTIFICATE_P12_BASE64      Apple Distribution certificate exported as .p12, base64-encoded
+#                                   (macOS:  base64 -i Certificates.p12 | pbcopy)
+#   IOS_CERTIFICATE_PASSWORD        password set when exporting the .p12
+#   IOS_PROVISIONING_PROFILE_BASE64 .mobileprovision for bundle id com.hackeros.app, base64-encoded
+#                                   (type must match the chosen export method: App Store / Ad Hoc / Enterprise)
+#   IOS_KEYCHAIN_PASSWORD           any random string (used for the temporary build keychain)
+#   APPLE_TEAM_ID                   10-character Apple Developer Team ID
+#
+# Optional secrets, only needed when "upload_to_testflight" is enabled:
+#   APPSTORE_API_KEY_ID             App Store Connect API key id
+#   APPSTORE_API_ISSUER_ID          App Store Connect issuer id
+#   APPSTORE_API_PRIVATE_KEY        contents of the AuthKey_XXXX.p8 file
+on:
+  workflow_dispatch:
+    inputs:
+      export_method:
+        description: "Distribution method (must match the provisioning profile type)"
+        type: choice
+        required: true
+        default: app-store-connect
+        options:
+          - app-store-connect
+          - ad-hoc
+          - enterprise
+      build_number:
+        description: "Build number override (CFBundleVersion). Leave empty to use ios-ui/project.yml"
+        type: string
+        required: false
+        default: ""
+      upload_to_testflight:
+        description: "Upload the .ipa to App Store Connect / TestFlight (app-store-connect only)"
+        type: boolean
+        required: false
+        default: false
+
+env:
+  BUNDLE_ID: com.hackeros.app
+  SCHEME: HackerOS
+
+jobs:
+  ios-production:
+    name: iOS - signed production .ipa
+    runs-on: macos-latest
+    timeout-minutes: 45
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # macos-latest ships several Xcode versions; use the newest stable one.
+      - name: Select Xcode
+        uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: latest-stable
+
+      - name: Show toolchain
+        run: |
+          xcodebuild -version
+          sw_vers
+
+      - name: Verify signing secrets
+        env:
+          IOS_CERTIFICATE_P12_BASE64: ${{ secrets.IOS_CERTIFICATE_P12_BASE64 }}
+          IOS_CERTIFICATE_PASSWORD: ${{ secrets.IOS_CERTIFICATE_PASSWORD }}
+          IOS_PROVISIONING_PROFILE_BASE64: ${{ secrets.IOS_PROVISIONING_PROFILE_BASE64 }}
+          IOS_KEYCHAIN_PASSWORD: ${{ secrets.IOS_KEYCHAIN_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: |
+          missing=0
+          for name in IOS_CERTIFICATE_P12_BASE64 IOS_CERTIFICATE_PASSWORD IOS_PROVISIONING_PROFILE_BASE64 IOS_KEYCHAIN_PASSWORD APPLE_TEAM_ID; do
+            if [ -z "${!name}" ]; then
+              echo "::error::Missing repository secret: $name"
+              missing=1
+            fi
+          done
+          exit $missing
+
+      - name: Install XcodeGen
+        run: brew install xcodegen
+
+      - name: Apply build number override
+        if: ${{ inputs.build_number != '' }}
+        working-directory: ios-ui
+        run: |
+          sed -i '' -E 's/(CURRENT_PROJECT_VERSION: )"[^"]*"/\1"${{ inputs.build_number }}"/' project.yml
+          grep CURRENT_PROJECT_VERSION project.yml
+
+      - name: Generate Xcode project
+        working-directory: ios-ui
+        run: xcodegen generate
+
+      - name: Import certificate and provisioning profile
+        env:
+          IOS_CERTIFICATE_P12_BASE64: ${{ secrets.IOS_CERTIFICATE_P12_BASE64 }}
+          IOS_CERTIFICATE_PASSWORD: ${{ secrets.IOS_CERTIFICATE_PASSWORD }}
+          IOS_PROVISIONING_PROFILE_BASE64: ${{ secrets.IOS_PROVISIONING_PROFILE_BASE64 }}
+          IOS_KEYCHAIN_PASSWORD: ${{ secrets.IOS_KEYCHAIN_PASSWORD }}
+        run: |
+          KEYCHAIN_PATH="$RUNNER_TEMP/build.keychain-db"
+          CERT_PATH="$RUNNER_TEMP/certificate.p12"
+          PROFILE_PATH="$RUNNER_TEMP/profile.mobileprovision"
+
+          echo -n "$IOS_CERTIFICATE_P12_BASE64" | base64 --decode > "$CERT_PATH"
+          echo -n "$IOS_PROVISIONING_PROFILE_BASE64" | base64 --decode > "$PROFILE_PATH"
+
+          # Temporary keychain
+          security create-keychain -p "$IOS_KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+          security set-keychain-settings -lut 21600 "$KEYCHAIN_PATH"
+          security unlock-keychain -p "$IOS_KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+          security import "$CERT_PATH" -P "$IOS_CERTIFICATE_PASSWORD" -A -t cert -f pkcs12 -k "$KEYCHAIN_PATH"
+          security set-key-partition-list -S apple-tool:,apple: -k "$IOS_KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+          security list-keychain -d user -s "$KEYCHAIN_PATH" login.keychain-db
+
+          # Provisioning profile
+          security cms -D -i "$PROFILE_PATH" > "$RUNNER_TEMP/profile.plist"
+          PROFILE_UUID=$(/usr/libexec/PlistBuddy -c 'Print :UUID' "$RUNNER_TEMP/profile.plist")
+          PROFILE_NAME=$(/usr/libexec/PlistBuddy -c 'Print :Name' "$RUNNER_TEMP/profile.plist")
+          mkdir -p "$HOME/Library/MobileDevice/Provisioning Profiles"
+          cp "$PROFILE_PATH" "$HOME/Library/MobileDevice/Provisioning Profiles/$PROFILE_UUID.mobileprovision"
+
+          # Signing identity name actually present in the keychain
+          SIGN_IDENTITY=$(security find-identity -v -p codesigning "$KEYCHAIN_PATH" | grep -m1 -oE '"(Apple Distribution|iPhone Distribution)[^"]*"' | tr -d '"')
+          if [ -z "$SIGN_IDENTITY" ]; then
+            echo "::error::No Apple Distribution / iPhone Distribution identity found in the .p12"
+            security find-identity -v -p codesigning "$KEYCHAIN_PATH"
+            exit 1
+          fi
+
+          {
+            echo "KEYCHAIN_PATH=$KEYCHAIN_PATH"
+            echo "PROFILE_NAME=$PROFILE_NAME"
+            echo "PROFILE_UUID=$PROFILE_UUID"
+            echo "SIGN_IDENTITY=$SIGN_IDENTITY"
+          } >> "$GITHUB_ENV"
+          echo "Profile: $PROFILE_NAME ($PROFILE_UUID)"
+          echo "Identity: $SIGN_IDENTITY"
+
+      - name: Archive (Release, signed)
+        working-directory: ios-ui
+        env:
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: |
+          xcodebuild archive \
+            -project HackerOS.xcodeproj \
+            -scheme "$SCHEME" \
+            -configuration Release \
+            -sdk iphoneos \
+            -destination 'generic/platform=iOS' \
+            -archivePath "$RUNNER_TEMP/HackerOS.xcarchive" \
+            -derivedDataPath "$RUNNER_TEMP/DerivedData" \
+            OTHER_CODE_SIGN_FLAGS="--keychain $KEYCHAIN_PATH" \
+            CODE_SIGN_STYLE=Manual \
+            DEVELOPMENT_TEAM="$APPLE_TEAM_ID" \
+            CODE_SIGN_IDENTITY="$SIGN_IDENTITY" \
+            PROVISIONING_PROFILE_SPECIFIER="$PROFILE_NAME"
+
+      - name: Create ExportOptions.plist
+        env:
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          EXPORT_METHOD: ${{ inputs.export_method }}
+        run: |
+          cat > "$RUNNER_TEMP/ExportOptions.plist" <<PLIST
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0">
+          <dict>
+            <key>method</key><string>${EXPORT_METHOD}</string>
+            <key>teamID</key><string>${APPLE_TEAM_ID}</string>
+            <key>signingStyle</key><string>manual</string>
+            <key>signingCertificate</key><string>${SIGN_IDENTITY}</string>
+            <key>provisioningProfiles</key>
+            <dict>
+              <key>${BUNDLE_ID}</key><string>${PROFILE_NAME}</string>
+            </dict>
+            <key>stripSwiftSymbols</key><true/>
+            <key>uploadSymbols</key><true/>
+          </dict>
+          </plist>
+          PLIST
+          cat "$RUNNER_TEMP/ExportOptions.plist"
+
+      - name: Export .ipa
+        run: |
+          xcodebuild -exportArchive \
+            -archivePath "$RUNNER_TEMP/HackerOS.xcarchive" \
+            -exportPath "$RUNNER_TEMP/export" \
+            -exportOptionsPlist "$RUNNER_TEMP/ExportOptions.plist"
+          ls -la "$RUNNER_TEMP/export"
+
+      - name: Collect .ipa into outputs/
+        id: package
+        run: |
+          VERSION=$(grep -m1 'MARKETING_VERSION' ios-ui/project.yml | sed -E 's/.*"([^"]+)".*/\1/')
+          BUILD=$(grep -m1 'CURRENT_PROJECT_VERSION' ios-ui/project.yml | sed -E 's/.*"([^"]+)".*/\1/')
+          mkdir -p outputs
+          IPA=$(find "$RUNNER_TEMP/export" -name "*.ipa" | head -n1)
+          if [ -z "$IPA" ]; then
+            echo "::error::No .ipa produced by exportArchive"
+            exit 1
+          fi
+          OUT="outputs/HackerOS-App-v${VERSION}-b${BUILD}-${{ inputs.export_method }}.ipa"
+          cp "$IPA" "$OUT"
+          echo "ipa=$OUT" >> "$GITHUB_OUTPUT"
+          ls -la outputs
+
+      - name: Upload to App Store Connect (TestFlight)
+        if: ${{ inputs.upload_to_testflight && inputs.export_method == 'app-store-connect' }}
+        env:
+          APPSTORE_API_KEY_ID: ${{ secrets.APPSTORE_API_KEY_ID }}
+          APPSTORE_API_ISSUER_ID: ${{ secrets.APPSTORE_API_ISSUER_ID }}
+          APPSTORE_API_PRIVATE_KEY: ${{ secrets.APPSTORE_API_PRIVATE_KEY }}
+        run: |
+          if [ -z "$APPSTORE_API_KEY_ID" ] || [ -z "$APPSTORE_API_ISSUER_ID" ] || [ -z "$APPSTORE_API_PRIVATE_KEY" ]; then
+            echo "::error::APPSTORE_API_KEY_ID / APPSTORE_API_ISSUER_ID / APPSTORE_API_PRIVATE_KEY secrets are required for upload"
+            exit 1
+          fi
+          mkdir -p "$HOME/.appstoreconnect/private_keys"
+          echo "$APPSTORE_API_PRIVATE_KEY" > "$HOME/.appstoreconnect/private_keys/AuthKey_${APPSTORE_API_KEY_ID}.p8"
+          xcrun altool --upload-app --type ios \
+            --file "${{ steps.package.outputs.ipa }}" \
+            --apiKey "$APPSTORE_API_KEY_ID" \
+            --apiIssuer "$APPSTORE_API_ISSUER_ID"
+
+      - name: Upload .ipa artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios-production-ipa
+          path: outputs/*.ipa
+          if-no-files-found: error
+
+      - name: Clean up keychain and profile
+        if: always()
+        run: |
+          if [ -n "$KEYCHAIN_PATH" ]; then
+            security delete-keychain "$KEYCHAIN_PATH" || true
+          fi
+          if [ -n "$PROFILE_UUID" ]; then
+            rm -f "$HOME/Library/MobileDevice/Provisioning Profiles/$PROFILE_UUID.mobileprovision"
+          fi
+          rm -f "$RUNNER_TEMP/certificate.p12" "$RUNNER_TEMP/profile.mobileprovision"
+          rm -f "$HOME/.appstoreconnect/private_keys/"AuthKey_*.p8 || true
