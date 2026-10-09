@@ -1,40 +1,25 @@
 name: Build App
 
-# Run it manually from the Actions tab ("Run workflow") and choose the target platform:
-#   android - debug + release APKs (Jetpack Compose UI in source-code/)
-#   ios     - unsigned .ipa + simulator build (SwiftUI UI in ios-ui/; Compose is not available on iOS)
-#   both    - both jobs
-# Pushes/PRs that touch the Android source keep building the APKs automatically, as before.
+# Android build (debug + release APKs, Jetpack Compose UI in source-code/).
+# The iOS build lives in its own workflow: .github/workflows/build-macos.yml
+# Run manually from the Actions tab ("Run workflow"); pushes/PRs touching the Android source
+# also build the APKs automatically.
 on:
   workflow_dispatch:
-    inputs:
-      platform:
-        description: "Platform to build"
-        type: choice
-        required: true
-        default: android
-        options:
-          - android
-          - ios
-          - both
   push:
     branches: [ main ]
     paths:
       - "source-code/**"
-      - "ios-ui/**"
       - ".github/workflows/build.yml"
   pull_request:
     branches: [ main ]
     paths:
       - "source-code/**"
-      - "ios-ui/**"
       - ".github/workflows/build.yml"
 
 jobs:
   android:
     name: Android - debug + release APKs
-    # Manual runs honour the chosen platform; push/PR runs always build Android.
-    if: github.event_name != 'workflow_dispatch' || inputs.platform == 'android' || inputs.platform == 'both'
     runs-on: ubuntu-latest
     # Hard safety net: this job must never sit "waiting" indefinitely. If anything ever hangs
     # again, the run fails loudly after 30 minutes instead of stalling silently.
@@ -117,62 +102,4 @@ jobs:
         with:
           name: android-outputs
           path: outputs/*.zip
-          if-no-files-found: error
-
-  ios:
-    name: iOS - SwiftUI build (unsigned .ipa)
-    # Only for manual runs that picked ios/both. Needs no Apple account: the .ipa is unsigned
-    # (re-sign it with your own certificate, e.g. via Xcode/AltStore/Sideloadly, to install it).
-    if: github.event_name == 'workflow_dispatch' && (inputs.platform == 'ios' || inputs.platform == 'both')
-    runs-on: macos-14
-    timeout-minutes: 30
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Select Xcode
-        # macos-14 runners ship several Xcode versions; pin one explicitly instead of relying on
-        # whatever happens to be the default, so this build doesn't silently change behaviour.
-        run: |
-          sudo xcode-select -s /Applications/Xcode_15.4.app
-          xcodebuild -version
-
-      - name: Install XcodeGen
-        run: brew install xcodegen
-
-      - name: Generate Xcode project
-        working-directory: ios-ui
-        run: xcodegen generate
-
-      - name: Build for iOS Simulator (compile check)
-        working-directory: ios-ui
-        run: |
-          xcodebuild -project HackerOS.xcodeproj -scheme HackerOS \
-            -sdk iphonesimulator -configuration Debug \
-            -destination 'generic/platform=iOS Simulator' \
-            CODE_SIGNING_ALLOWED=NO build
-
-      - name: Build for iOS device (unsigned)
-        working-directory: ios-ui
-        run: |
-          xcodebuild -project HackerOS.xcodeproj -scheme HackerOS \
-            -sdk iphoneos -configuration Release -derivedDataPath build \
-            CODE_SIGNING_ALLOWED=NO CODE_SIGN_IDENTITY="" CODE_SIGNING_REQUIRED=NO build
-
-      - name: Package unsigned .ipa
-        run: |
-          VERSION=$(grep -m1 'MARKETING_VERSION' ios-ui/project.yml | sed -E 's/.*"([^"]+)".*/\1/')
-          mkdir -p outputs/Payload
-          cp -R ios-ui/build/Build/Products/Release-iphoneos/HackerOS.app outputs/Payload/
-          cd outputs
-          zip -qr "HackerOS-App-v${VERSION}-unsigned.ipa" Payload
-          rm -rf Payload
-          ls -la
-
-      - name: Upload outputs artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: ios-outputs
-          path: outputs/*.ipa
           if-no-files-found: error
